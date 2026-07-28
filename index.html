@@ -297,6 +297,12 @@ document.querySelectorAll('.sub-nav button').forEach(b=>{
     document.querySelectorAll('.sub-tab').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
     document.getElementById('sub-'+b.dataset.sub).classList.add('on');
+    // 触发子标签对应的懒渲染（与主导航 __registerTab 机制对齐）
+    const sub = b.dataset.sub;
+    if(window.__tabRenders[sub] && !window.__tabDone[sub]){
+      window.__tabDone[sub]=true;
+      Promise.resolve().then(window.__tabRenders[sub]);
+    }
   };
 });
 
