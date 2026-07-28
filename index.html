@@ -30,6 +30,9 @@
   .kpi .sub{font-size:11px;color:var(--sub);margin-top:4px;line-height:1.4}
   .kpi .sub b{color:var(--text);font-weight:600}
   .pos-banner{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+  .alert-banner{margin:0 0 16px;padding:15px 18px;border-radius:12px;background:linear-gradient(135deg,#fff4f4,#ffe1e1);border:1px solid #ffc9c9;border-left:6px solid #ff1a1a;color:#e01818;font-size:23px;font-weight:800;letter-spacing:.3px;line-height:1.45;text-align:center;box-shadow:0 2px 10px rgba(224,24,24,.10);animation:alertPulse 2.6s ease-in-out infinite}
+  .alert-banner .warn{margin-right:8px}
+  @keyframes alertPulse{0%,100%{box-shadow:0 2px 10px rgba(224,24,24,.10)}50%{box-shadow:0 3px 18px rgba(224,24,24,.30)}}
   .pos-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
   .pos-title{font-size:14px;font-weight:600;color:var(--ink)}
   .pos-zone{font-size:15px;font-weight:600}
@@ -120,6 +123,7 @@
 <main>
   <!-- ===== 情绪波浪 ===== -->
   <section class="tab on" id="tab-wave">
+    <div class="alert-banner" id="alertBanner"><span class="warn">⚠</span>如果没有让你感到兴奋的机会，就果断选择空仓！</div>
     <div class="pos-banner" id="posBanner">
       <div class="pos-head">
         <span class="pos-title">次日最大仓位上限</span>
@@ -139,7 +143,7 @@
     <div class="panel"><h2>跌超7% 恐慌指标（对数轴 · 底10）</h2><div class="chart-box"><canvas id="cPanic"></canvas></div>
       <div class="note">单日跌幅&gt;7%的个股数量，采用对数轴（底10）：极端行情不再把正常日压扁，冰点日与常态日都清晰可辨（数值下限取1以保证对数可见）。</div></div>
     <div class="panel"><h2>炸板率</h2><div class="chart-box"><canvas id="cZb"></canvas></div>
-      <div class="note">炸板率%=炸板数 /(涨停封板数+炸板数)，单位本就不同，单独成图。&gt;40% 多为退潮分歧，&lt;20% 多为一致加速。<b>橙色虚线=27% 分歧/洗盘观察区</b>：高炸板率多为冰点反转观察，次日常均值回归反弹，并非风险信号（前瞻风险在「过热侧」，见溢价图过热线）。</div></div>
+      <div class="note">炸板率%=炸板数 /(涨停封板数+炸板数)。<b>多数时间处于 17%~30% 正常态</b>，无需过度解读。关键判读：① 炸板率高（&gt;30%）但跌停板/跌超7%数量稀少、环境向好 → 多为<b>趋势行情</b>（大盘单边向上），连板赚钱效应弱，<b>应回避连板</b>；② 高炸板率伴随跌停/跌超7%同步放大 → 才是真退潮风险。非趋势情境下，高炸板率多为冰点反转前的分歧/洗盘，次日常均值回归反弹，并非风险信号（前瞻风险在「过热侧」，见溢价图过热线）。</div></div>
     <div class="panel"><h2>涨停家数 vs 跌停家数（跌停独立右轴）</h2><div class="chart-box"><canvas id="cMain"></canvas></div>
       <div class="note">红=涨停（左轴），绿=跌停（右轴，独立刻度，不再被涨停压制）。两者剪刀差即市场强弱：跌停从个位数爬升即预警，百股跌停为极端冰点。<b>虚线为警戒线：涨停≥80家、跌停≥5家</b>——任一被触及即提示情绪过热/风险。</div></div>
     <div class="panel"><h2>连板高度（最高连板数 · 左10cm / 右20cm）</h2><div id="boardKpi" class="cards" style="margin-bottom:12px"></div><div class="chart-box"><canvas id="cBoard"></canvas></div>
@@ -402,9 +406,24 @@ function baseOpts(extra){
     const zoneEl=document.getElementById('posZone');
     zoneEl.textContent=POS.zone+' · '+c+'%';
     zoneEl.style.color=color;
+    // 炸板率上下文判读（基于当日 W 数据，独立于 POS）：
+    // 高炸板率 + 环境向好(跌停/跌超7%稀少) → 趋势行情，回避连板
+    const znow=last.zb_rate, dtNow=last.dt_count, fallNow=last.fall_gt7, ztbNow=last.ztb_perf;
+    const med=arr=>{const a=arr.filter(v=>v!=null).sort((x,y)=>x-y);const n=a.length;return n?a[Math.floor((n-1)/2)]:null;};
+    const dtMed=med(W.map(d=>d.dt_count)), fallMed=med(W.map(d=>d.fall_gt7));
+    let lbTip='';
+    if(znow!=null && znow>30){
+      const envGood=(dtNow!=null&&dtMed!=null&&dtNow<=dtMed)&&(fallNow!=null&&fallMed!=null&&fallNow<=fallMed)&&(ztbNow==null||ztbNow>=0);
+      if(envGood){
+        lbTip=' · <b style="color:#C0392B">趋势行情信号：炸板率'+znow.toFixed(0)+'%偏高但跌停/跌超7%稀少、环境向好 → 连板赚钱效应弱，回避连板</b>';
+      } else {
+        lbTip=' · 炸板率'+znow.toFixed(0)+'%偏高：分歧/洗盘观察，次日常均值回归，非风险信号';
+      }
+    }
     let meta='状态：<b>'+POS.state+'</b>（连日冰点 '+POS.streak+' 天） · 前日：<b>'+POS.prev_state+'</b>'
       +' · 亏钱效应指数 <b>'+POS.pain.toFixed(2)+'</b> · 昨日涨停溢价 <b>'+(POS.ztb!=null?POS.ztb.toFixed(2):'-')+'%</b>';
     if(POS.strict) meta+=' · <b style="color:#C0392B">严格冰点交集（最高置信重仓）</b>';
+    meta+=lbTip;
     meta+='<br>此为「上限位」（环境给的仓位天花板），非目标仓位；真实仓位通常低于此数。';
     document.getElementById('posMeta').innerHTML=meta;
   })();
