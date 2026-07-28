@@ -33,7 +33,7 @@
   .pos-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
   .pos-title{font-size:14px;font-weight:600;color:var(--ink)}
   .pos-zone{font-size:15px;font-weight:600}
-  .pos-track{width:100%;height:18px;background:#eef0f3;border-radius:9px;overflow:hidden}
+  .pos-track{width:100%;height:18px;background:linear-gradient(90deg,rgba(169,194,206,.40),rgba(188,174,211,.40),rgba(221,169,144,.40));border-radius:9px;overflow:hidden}
   .pos-fill{height:100%;border-radius:9px;transition:width .4s ease,background .4s ease}
   .pos-meta{margin-top:10px;font-size:12px;color:var(--sub);line-height:1.7}
   .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
@@ -377,12 +377,26 @@ function baseOpts(extra){
   }).join('');
 
   // ---- 次日最大仓位上限（由 build 注入 const POS）----
+  // 浅色低饱和光谱：浅钢蓝(冷·避让) → 浅薰衣草紫(中性) → 浅陶土(暖·重仓)
+  function posColor(c){
+    const stops=[
+      {p:0,  c:[169,194,206]}, // 浅钢蓝
+      {p:50, c:[188,174,211]}, // 浅薰衣草紫
+      {p:100,c:[221,169,144]}  // 浅陶土
+    ];
+    const p=Math.max(0,Math.min(100,c));
+    let a=stops[0], b=stops[1];
+    if(p>50){ a=stops[1]; b=stops[2]; }
+    const t=(p-(p>50?50:0))/50;
+    const L=(x,y)=>Math.round(x+(y-x)*t);
+    return 'rgb('+L(a.c[0],b.c[0])+','+L(a.c[1],b.c[1])+','+L(a.c[2],b.c[2])+')';
+  }
   (function(){
     const el=document.getElementById('posBanner');
     if(!el||!POS) return;
     const c=POS.ceiling;
     const fill=document.getElementById('posFill');
-    const color = c<=0?'#444441':(c<50?'#6b6357':(c<80?'#888780':'#BA7517'));
+    const color = posColor(c);
     fill.style.width=c+'%';
     fill.style.background=color;
     const zoneEl=document.getElementById('posZone');
@@ -390,7 +404,7 @@ function baseOpts(extra){
     zoneEl.style.color=color;
     let meta='状态：<b>'+POS.state+'</b>（连日冰点 '+POS.streak+' 天） · 前日：<b>'+POS.prev_state+'</b>'
       +' · 亏钱效应指数 <b>'+POS.pain.toFixed(2)+'</b> · 昨日涨停溢价 <b>'+(POS.ztb!=null?POS.ztb.toFixed(2):'-')+'%</b>';
-    if(POS.strict) meta+=' · <b style="color:#BA7517">严格冰点交集（最高置信重仓）</b>';
+    if(POS.strict) meta+=' · <b style="color:#C0896B">严格冰点交集（最高置信重仓）</b>';
     meta+='<br>此为「上限位」（环境给的仓位天花板），非目标仓位；真实仓位通常低于此数。';
     document.getElementById('posMeta').innerHTML=meta;
   })();
