@@ -169,6 +169,50 @@
   .tier.tier-risk:hover .tier-badge{display:block;animation:tierBadgeBlink 1s steps(2,end) infinite}
   @keyframes tierShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
   @keyframes tierBadgeBlink{0%,100%{opacity:1}50%{opacity:.35}}
+  /* ===== 纪律打卡 ===== */
+  .disc-bar{display:flex;align-items:center;gap:18px;margin-top:16px;flex-wrap:wrap}
+  .disc-stat{display:flex;align-items:baseline;gap:6px}
+  .disc-stat .n{font-size:20px;font-weight:700;letter-spacing:-.4px;color:var(--ink)}
+  .disc-stat .l{font-size:12px;color:var(--sub)}
+  .disc-stat .n.empty{color:#1f9e83}
+  .checkin-btn{background:var(--accent);color:#fff;border:none;border-radius:11px;padding:10px 22px;font-size:15px;font-weight:600;cursor:pointer;transition:transform .2s,box-shadow .2s}
+  .checkin-btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,113,227,.28)}
+  .checkin-btn.done{background:#eef0f3;color:#8a90a0}
+  .disc-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
+  .disc-export{background:#eef0f3;color:#1d1d1f;border:1px solid #d9dde3;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:transform .2s,box-shadow .2s}
+  .disc-export:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(20,23,33,.10)}
+  .disc-panel .disc-summary{display:flex;gap:26px;flex-wrap:wrap;font-size:14px;color:var(--sub);margin-bottom:14px}
+  .disc-panel .disc-summary b{font-size:18px;color:var(--ink);font-weight:700;margin-right:4px}
+  .disc-strip{display:grid;grid-template-columns:repeat(31,1fr);gap:4px}
+  .disc-cell{border-radius:5px;aspect-ratio:1/1;background:rgba(120,120,128,.10);transition:transform .15s}
+  .disc-cell:hover{transform:scale(1.12)}
+  .disc-cell.empty{background:rgba(31,158,131,.22)}
+  .disc-cell.open{background:rgba(255,159,10,.30)}
+  .disc-cell.heavy{background:rgba(255,69,58,.34)}
+  .disc-cell.today{outline:2px solid var(--accent);outline-offset:1px}
+  .disc-legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--sub);flex-wrap:wrap}
+  .disc-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle}
+  .disc-legend .empty{background:#1f9e83}.disc-legend .open{background:#ff9f0a}.disc-legend .heavy{background:#ff453a}.disc-legend .none{background:rgba(120,120,128,.3)}
+  /* modal */
+  .checkin-mask{position:fixed;inset:0;background:rgba(15,17,23,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:20000;padding:20px}
+  .checkin-card{width:440px;max-width:100%;background:#fff;border-radius:20px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.28);max-height:92vh;overflow:auto}
+  .cc-head{display:flex;align-items:center;font-size:18px;font-weight:700;margin-bottom:18px}
+  .cc-head .grey{font-size:13px;font-weight:500;margin-left:8px}
+  .cc-close{margin-left:auto;background:none;border:none;font-size:18px;color:var(--sub);cursor:pointer}
+  .cc-q{font-size:14px;font-weight:600;color:var(--ink);margin:16px 0 9px}
+  .cc-q .req{color:var(--red);margin-left:3px}
+  .cc-row{display:flex;gap:10px;flex-wrap:wrap}
+  .cc-row button{border:1px solid var(--line);background:#fff;padding:10px 20px;border-radius:11px;cursor:pointer;font-size:15px;color:var(--ink);transition:all .15s;font-weight:500}
+  .cc-row button:hover{border-color:var(--accent)}
+  .cc-row button.sel{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .cc-row#ccExcited button.sel{background:#1f9e83;border-color:#1f9e83}
+  #ccNote{width:100%;min-height:84px;margin-top:4px;border:1px solid var(--line);border-radius:11px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;color:var(--ink)}
+  .cc-actions{display:flex;align-items:center;gap:14px;margin-top:22px}
+  .cc-submit{background:var(--accent);color:#fff;border:none;border-radius:11px;padding:11px 26px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s}
+  .cc-submit:disabled{opacity:.4;cursor:not-allowed}
+  .cc-submit:not(:disabled):hover{box-shadow:0 8px 22px rgba(0,113,227,.28)}
+  .cc-hint{font-size:12px;color:var(--sub)}
+  @media(max-width:560px){.disc-strip{grid-template-columns:repeat(15,1fr)}}
 </style>
 </head>
 <body>
@@ -183,12 +227,37 @@
     <button data-tab="lhb">龙虎榜</button>
     <button data-tab="db">数据库表</button>
   </nav>
+    <div class="disc-bar">
+      <div class="disc-stat"><span class="n empty" id="discEmptyTotal">0</span><span class="l">本月空仓</span></div>
+      <div class="disc-stat"><span class="n" id="discEmptyStreak">0</span><span class="l">连续空仓</span></div>
+      <div class="disc-stat"><span class="n" id="discOpenStreak">0</span><span class="l">连续持仓</span></div>
+      <div class="disc-actions">
+        <button class="disc-export" id="discExportBtn" type="button">导出 Excel</button>
+        <button class="checkin-btn" id="checkinBtn">今日打卡</button>
+      </div>
+    </div>
 </div>
 
 <main>
   <!-- ===== 情绪波浪 ===== -->
   <section class="tab on" id="tab-wave">
     <div class="alert-banner" id="alertBanner"><span class="warn">⚠</span>如果没有让你感到兴奋的机会，就果断选择空仓！<span class="alert-risk" id="alertRisk"></span></div>
+    <div class="panel disc-panel">
+      <h2>本月纪律簿 <small class="grey">仅存本机 · 不上传</small></h2>
+      <div class="disc-summary">
+        <div><b id="discTotal2">0</b>天本月空仓</div>
+        <div>连续空仓 <b id="discStreak2">0</b> 天</div>
+        <div>连续持仓 <b id="discOpen2">0</b> 天</div>
+      </div>
+      <div class="disc-strip" id="discStrip"></div>
+      <div class="disc-legend">
+        <span><i class="empty"></i>空仓</span>
+        <span><i class="open"></i>开仓</span>
+        <span><i class="heavy"></i>重仓/满仓</span>
+        <span><i class="none"></i>未打卡</span>
+      </div>
+      <div class="note">每天点一次「今日打卡」：必答「今天有让我兴奋的机会吗」，再选空仓/开仓。开仓时记录仓位与思路。空仓日累计，帮你诚实看见「这个月我空了多少天」——这是防止 tilt 与马丁的保险丝。</div>
+    </div>
     <div class="pos-banner" id="posBanner">
       <div class="pos-head">
         <span class="pos-title">次日仓位上限 · 动态管理（按情绪阶段）</span>
@@ -1315,6 +1384,194 @@ function baseOpts(extra){
     if(!maxLb){maxLb=Math.max(num(d.b5plus_10cm)?5:0,num(d.b4plus_10cm)?4:0,num(d.b3_10cm)?3:0,num(d.b2_10cm)?2:0,num(d.zt_10cm)?1:0);}
     r.textContent='今日涨停 '+(zt!=null?zt:'-')+' 家 · 跌停 '+(dt!=null?dt:'-')+' 家 · 最高连板 '+maxLb+' 板';
   }catch(e){}
+})();
+</script>
+<div class="checkin-mask" id="checkinMask" style="display:none">
+  <div class="checkin-card">
+    <div class="cc-head">今日打卡 <span class="grey" id="ccDate"></span><button class="cc-close" id="ccClose" type="button">✕</button></div>
+    <div class="cc-q">今天有让你兴奋的机会吗？<span class="req">*</span></div>
+    <div class="cc-row" id="ccExcited">
+      <button type="button" data-v="1">有</button><button type="button" data-v="0">无</button>
+    </div>
+    <div class="cc-q">今日状态</div>
+    <div class="cc-row" id="ccState">
+      <button type="button" data-v="empty">空仓</button><button type="button" data-v="open">开仓</button>
+    </div>
+    <div id="ccOpenFields" style="display:none">
+      <div class="cc-q">仓位档位</div>
+      <div class="cc-row" id="ccSize">
+        <button type="button" data-v="轻仓">轻仓</button><button type="button" data-v="半仓">半仓</button><button type="button" data-v="重仓">重仓</button><button type="button" data-v="满仓">满仓</button>
+      </div>
+      <div class="cc-q">开仓原因 &amp; 后续操作思路</div>
+      <textarea id="ccNote" placeholder="如：持有科技票，等冲高回落砸掉空仓 / 一直持有"></textarea>
+    </div>
+    <div class="cc-actions">
+      <button class="cc-submit" id="ccSubmit" type="button" disabled>记录今日</button>
+      <span class="cc-hint" id="ccHint">请先回答必答问题并选择状态</span>
+    </div>
+  </div>
+</div>
+<script>
+/* 纪律打卡：仅存 localStorage，绝不上传 */
+(function(){
+  var KEY='fupan_checkin_v1';
+  function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
+  function save(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
+  function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+  function today(){return ymd(new Date());}
+  function monthDays(y,m){return new Date(y,m+1,0).getDate();}
+  var data=load();
+  var sel={excited:null,state:null,size:null};
+  function $(id){return document.getElementById(id);}
+  function render(){
+    var now=new Date();
+    var y=now.getFullYear(), m=now.getMonth();
+    var md=monthDays(y,m);
+    var t=today();
+    var emptyTotal=0, emptyStreak=0, openStreak=0;
+    for(var i=0;i<md+1;i++){
+      var d=new Date(y,m,now.getDate()-i);
+      var rec=data[ymd(d)];
+      if(!rec) break;
+      if(rec.state==='empty'){ emptyStreak++; } else { break; }
+    }
+    for(var j=0;j<md+1;j++){
+      var d2=new Date(y,m,now.getDate()-j);
+      var rec2=data[ymd(d2)];
+      if(!rec2 || rec2.state!=='open') break;
+      openStreak++;
+    }
+    for(var k=1;k<=md;k++){
+      var dk=new Date(y,m,k);
+      if(data[ymd(dk)] && data[ymd(dk)].state==='empty') emptyTotal++;
+    }
+    $('discEmptyTotal').textContent=emptyTotal;
+    $('discEmptyStreak').textContent=emptyStreak;
+    $('discOpenStreak').textContent=openStreak;
+    if($('discTotal2'))$('discTotal2').textContent=emptyTotal;
+    if($('discStreak2'))$('discStreak2').textContent=emptyStreak;
+    if($('discOpen2'))$('discOpen2').textContent=openStreak;
+    var strip=$('discStrip');
+    if(strip){
+      strip.innerHTML='';
+      for(var c=1;c<=md;c++){
+        var dc=new Date(y,m,c);
+        var kc=ymd(dc);
+        var cell=document.createElement('div');
+        cell.className='disc-cell';
+        var r=data[kc];
+        if(r){
+          if(r.state==='open'){ cell.className+=(r.size==='重仓'||r.size==='满仓')?' heavy':' open'; }
+          else if(r.state==='empty'){ cell.className+=' empty'; }
+        }
+        if(kc===t) cell.className+=' today';
+        var tip=kc;
+        if(r){ tip+=(r.state==='empty'?' · 空仓':(' · 开仓'+(r.size?' · '+r.size:'')+(r.excited?' · 兴奋':' · 无兴奋'))); }
+        else { tip+=' · 未打卡'; }
+        cell.title=tip;
+        strip.appendChild(cell);
+      }
+    }
+    var btn=$('checkinBtn');
+    if(btn){ btn.classList.toggle('done', !!data[t]); btn.textContent=data[t]?'今日已打卡 ✓':'今日打卡'; }
+  }
+  function setSel(rowId,val){
+    var row=$(rowId); if(!row) return;
+    var bs=row.querySelectorAll('button');
+    bs.forEach(function(b){ b.classList.toggle('sel', b.getAttribute('data-v')===val); });
+  }
+  function openModal(){
+    var t=today();
+    var rec=data[t]||{};
+    sel={excited:rec.excited!=null?String(rec.excited):null,state:rec.state||null,size:rec.size||null};
+    $('ccDate').textContent=t;
+    $('ccNote').value=rec.note||'';
+    setSel('ccExcited',sel.excited);
+    setSel('ccState',sel.state);
+    setSel('ccSize',sel.size);
+    $('ccOpenFields').style.display=(sel.state==='open')?'block':'none';
+    updateSubmit();
+    $('checkinMask').style.display='flex';
+  }
+  function updateSubmit(){
+    var ok=sel.excited!=null && sel.state!=null;
+    $('ccSubmit').disabled=!ok;
+    $('ccHint').textContent=sel.excited==null?'请先回答必答问题':(sel.state==null?'请选择今日状态':'点击记录');
+  }
+  function bindRow(rowId,key){
+    var row=$(rowId); if(!row) return;
+    row.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      var v=b.getAttribute('data-v');
+      sel[key]=(sel[key]===v)?null:v;
+      setSel(rowId,sel[key]);
+      if(key==='state'){ $('ccOpenFields').style.display=(sel.state==='open')?'block':'none'; }
+      updateSubmit();
+    });
+  }
+  function submit(){
+    if(sel.excited==null||sel.state==null) return;
+    var t=today();
+    var rec={excited:sel.excited==='1',state:sel.state};
+    if(sel.state==='open'){ rec.size=sel.size||null; rec.note=$('ccNote').value.trim(); }
+    else { rec.size=null; rec.note=''; }
+    data[t]=rec;
+    save(data);
+    $('checkinMask').style.display='none';
+    render();
+  }
+  $('checkinBtn').addEventListener('click',openModal);
+  $('ccClose').addEventListener('click',function(){$('checkinMask').style.display='none';});
+  $('checkinMask').addEventListener('click',function(e){ if(e.target===$('checkinMask')) $('checkinMask').style.display='none'; });
+  $('ccSubmit').addEventListener('click',submit);
+  bindRow('ccExcited','excited');
+  bindRow('ccState','state');
+  bindRow('ccSize','size');
+  render();
+  /* 导出 Excel(CSV+BOM)：仅本机下载，绝不上传；可直接用 Excel 打开 */
+  function csvCell(v){
+    v=(v==null)?'':String(v);
+    if(/[",\n\r]/.test(v)) v='"'+v.replace(/"/g,'""')+'"';
+    return v;
+  }
+  function exportCSV(){
+    var all=load();
+    var dates=Object.keys(all).sort();
+    if(!dates.length){ alert('还没有打卡记录，先点「今日打卡」记一笔吧'); return; }
+    var rows=[['日期','兴奋机会','状态','仓位档位','开仓原因与后续思路']];
+    dates.forEach(function(d){
+      var r=all[d];
+      rows.push([d, r.excited?'有':'无', r.state==='empty'?'空仓':'开仓', r.state==='open'?(r.size||''):'', r.note||'']);
+    });
+    var total=dates.length, empty=0, open=0, heavy=0, excited=0;
+    var curEmpty=0, maxEmpty=0, curOpen=0, maxOpen=0;
+    dates.forEach(function(d){
+      var r=all[d];
+      if(r.state==='empty'){ empty++; curEmpty++; if(curEmpty>maxEmpty)maxEmpty=curEmpty; curOpen=0; }
+      else if(r.state==='open'){ open++; curOpen++; if(curOpen>maxOpen)maxOpen=curOpen; curEmpty=0; if(r.size==='重仓'||r.size==='满仓')heavy++; }
+      if(r.excited) excited++;
+    });
+    rows.push([]);
+    rows.push(['=== 汇总 ===']);
+    rows.push(['累计打卡天数', total]);
+    rows.push(['空仓天数', empty+'（'+(total?Math.round(empty/total*100):0)+'%）']);
+    rows.push(['开仓天数', open]);
+    rows.push(['其中重仓/满仓', heavy]);
+    rows.push(['兴奋机会有', excited+' 天']);
+    rows.push(['最长连续空仓', maxEmpty+' 天']);
+    rows.push(['最长连续持仓', maxOpen+' 天']);
+    var byMonth={};
+    dates.forEach(function(d){ var m=d.slice(0,7); if(!byMonth[m])byMonth[m]={t:0,e:0}; byMonth[m].t++; if(all[d].state==='empty')byMonth[m].e++; });
+    Object.keys(byMonth).sort().forEach(function(m){ rows.push([m+' 空仓', byMonth[m].e+' / '+byMonth[m].t+' 天']); });
+    var csv=rows.map(function(r){return r.map(csvCell).join(',');}).join('\r\n');
+    var blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download='复盘打卡_截至'+ymd(new Date())+'.csv';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 100);
+  }
+  $('discExportBtn').addEventListener('click',exportCSV);
 })();
 </script>
 </body>
