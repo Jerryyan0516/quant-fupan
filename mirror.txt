@@ -112,6 +112,14 @@
   .rz-detail{white-space:pre-wrap}
   .rz-src{margin-top:6px;font-size:12px;color:var(--sub)}
   .rz-empty{color:var(--sub);font-style:italic}
+  /* 行业自定义下拉（始终向下展开） */
+  .zt-ind{position:relative;display:inline-block}
+  .zt-ind-btn{font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
+  .zt-ind-btn .zt-ind-caret{font-size:10px;color:#aab0bd;line-height:1}
+  .zt-ind.open .zt-ind-btn{border-color:var(--accent)}
+  .zt-ind-menu{position:absolute;top:calc(100% + 4px);left:0;z-index:50;min-width:128px;max-height:260px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 20px rgba(20,23,33,.12);padding:4px 0}
+  .zt-ind-item{padding:6px 12px;font-size:13px;color:var(--fg);cursor:pointer;white-space:nowrap}
+  .zt-ind-item:hover{background:#f2f4f8}
 </style>
 </head>
 <body>
@@ -166,7 +174,7 @@
       <div class="tier-cards" id="tierCards"></div>
       <div class="note">点击上方方块，下方「当日涨停明细」即筛选为该梯队股票；再次点击或点「✕ 清除」恢复全部。点击任意个股行可展开「涨停原因」。</div></div>
     <div class="panel"><h2>当日涨停明细 <small id="ztDate" class="grey"></small></h2>
-      <div class="toolbar" id="ztDateTb" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:var(--sub)">日期：</span><select id="ztDateSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"></select><span style="font-size:12px;color:var(--sub)">涨跌幅限制：</span><select id="ztCmSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"><option value="all">全部</option><option value="10">10cm（主板）</option><option value="20">20cm（创业板/科创板）</option></select><span style="font-size:12px;color:var(--sub)">行业：</span><select id="ztIndSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"><option value="all">全部</option></select></div>
+      <div class="toolbar" id="ztDateTb" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:var(--sub)">日期：</span><select id="ztDateSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"></select><span style="font-size:12px;color:var(--sub)">涨跌幅限制：</span><select id="ztCmSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"><option value="all">全部</option><option value="10">10cm（主板）</option><option value="20">20cm（创业板/科创板）</option></select><span style="font-size:12px;color:var(--sub)">行业：</span><span class="zt-ind" id="ztIndWrap"><button type="button" class="zt-ind-btn" id="ztIndBtn"><span id="ztIndLabel">全部</span> <span class="zt-ind-caret">▾</span></button><div class="zt-ind-menu" id="ztIndMenu" style="display:none"></div></span></div>
       <div id="ztPoolBox"></div>
       <div class="note">来自 stock_pools.db 的 zt_pool 表（按日期切换查看全量数据）。按连板数降序排列，连板数相同按封板强度排序。20cm 标注为蓝色标签。点击上方梯队方块可筛选。</div></div>
     <div class="panel"><h2>历史晋级率曲线（数量口径）<small class="grey"> 基于数据库精确计算</small></h2>
@@ -619,8 +627,7 @@ function baseOpts(extra){
       list = list.filter(s => !!s._is20 === want20);
     }
     // 行业筛选
-    const indSel = document.getElementById('ztIndSel');
-    const indVal = indSel ? indSel.value : 'all';
+    const indVal = __ztIndVal || 'all';
     if (indVal !== 'all') {
       list = list.filter(s => (s['所属行业'] || '') === indVal);
     }
@@ -726,21 +733,48 @@ function baseOpts(extra){
   if (ztCmSel) {
     ztCmSel.onchange = () => { renderZtPool(); };
   }
-  // ---- 行业筛选器（涨停池，紧随涨跌幅限制）----
-  const ztIndSel = document.getElementById('ztIndSel');
+  // ---- 行业筛选器（自定义下拉，始终向下展开）----
+  const ztIndWrap = document.getElementById('ztIndWrap');
+  const ztIndBtn = document.getElementById('ztIndBtn');
+  const ztIndMenu = document.getElementById('ztIndMenu');
+  const ztIndLabel = document.getElementById('ztIndLabel');
+  let __ztIndVal = 'all';
   function fillZtIndustries() {
-    if (!ztIndSel) return;
-    const cur = ztIndSel.value || 'all';
+    if (!ztIndMenu) return;
+    const cur = __ztIndVal;
     const set = new Set();
     getZtRows().forEach(s => { const v = s['所属行业']; if (v) set.add(v); });
     const arr = [...set].sort((a, b) => a.localeCompare(b, 'zh'));
-    ztIndSel.innerHTML = '<option value="all">全部</option>' + arr.map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('');
-    ztIndSel.value = arr.includes(cur) ? cur : 'all';
+    const items = ['all'].concat(arr);
+    ztIndMenu.innerHTML = items.map(x => '<div class="zt-ind-item" data-v="' + esc(x) + '">' + (x === 'all' ? '全部' : esc(x)) + '</div>').join('');
+    ztIndMenu.querySelectorAll('.zt-ind-item').forEach(it => {
+      it.onclick = (e) => {
+        e.stopPropagation();
+        __ztIndVal = it.dataset.v;
+        ztIndLabel.textContent = it.dataset.v === 'all' ? '全部' : it.dataset.v;
+        ztIndMenu.style.display = 'none';
+        if (ztIndWrap) ztIndWrap.classList.remove('open');
+        renderZtPool();
+      };
+    });
+    if (!items.includes(cur)) __ztIndVal = 'all';
+    ztIndLabel.textContent = __ztIndVal === 'all' ? '全部' : __ztIndVal;
   }
-  if (ztIndSel) {
-    ztIndSel.onchange = () => { renderZtPool(); };
+  if (ztIndBtn && ztIndMenu) {
+    ztIndBtn.onclick = (e) => {
+      e.stopPropagation();
+      const open = ztIndMenu.style.display === 'block';
+      ztIndMenu.style.display = open ? 'none' : 'block';
+      if (ztIndWrap) ztIndWrap.classList.toggle('open', !open);
+    };
     fillZtIndustries();
   }
+  document.addEventListener('click', () => {
+    if (ztIndMenu && ztIndMenu.style.display === 'block') {
+      ztIndMenu.style.display = 'none';
+      if (ztIndWrap) ztIndWrap.classList.remove('open');
+    }
+  });
 
   renderTierCards();
   renderZtPool();
