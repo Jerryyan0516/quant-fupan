@@ -166,7 +166,7 @@
       <div class="tier-cards" id="tierCards"></div>
       <div class="note">点击上方方块，下方「当日涨停明细」即筛选为该梯队股票；再次点击或点「✕ 清除」恢复全部。点击任意个股行可展开「涨停原因」。</div></div>
     <div class="panel"><h2>当日涨停明细 <small id="ztDate" class="grey"></small></h2>
-      <div class="toolbar" id="ztDateTb" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:var(--sub)">日期：</span><select id="ztDateSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"></select><span style="font-size:12px;color:var(--sub)">涨跌幅限制：</span><select id="ztCmSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"><option value="all">全部</option><option value="10">10cm（主板）</option><option value="20">20cm（创业板/科创板）</option></select></div>
+      <div class="toolbar" id="ztDateTb" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:var(--sub)">日期：</span><select id="ztDateSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"></select><span style="font-size:12px;color:var(--sub)">涨跌幅限制：</span><select id="ztCmSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"><option value="all">全部</option><option value="10">10cm（主板）</option><option value="20">20cm（创业板/科创板）</option></select><span style="font-size:12px;color:var(--sub)">行业：</span><select id="ztIndSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"><option value="all">全部</option></select></div>
       <div id="ztPoolBox"></div>
       <div class="note">来自 stock_pools.db 的 zt_pool 表（按日期切换查看全量数据）。按连板数降序排列，连板数相同按封板强度排序。20cm 标注为蓝色标签。点击上方梯队方块可筛选。</div></div>
     <div class="panel"><h2>历史晋级率曲线（数量口径）<small class="grey"> 基于数据库精确计算</small></h2>
@@ -562,17 +562,44 @@ function baseOpts(extra){
     return String(x == null ? '' : x).replace(/[&<>"]/g, m => (
       { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
   }
+  let ztSort = { key: '连板数', dir: 'desc' };
+  function __ztSort(key) {
+    if (ztSort.key === key) { ztSort.dir = ztSort.dir === 'asc' ? 'desc' : 'asc'; }
+    else { ztSort.key = key; ztSort.dir = (key === '首次封板时间' || key === '最后封板时间') ? 'asc' : 'desc'; }
+    renderZtPool();
+  }
+  window.__ztSort = __ztSort;
+  function sortLabel() {
+    const c = cols.find(x => x.key === ztSort.key);
+    return (c ? c.label : ztSort.key) + (ztSort.dir === 'asc' ? ' ↑' : ' ↓');
+  }
+  function applyZtSort(list) {
+    const { key, dir } = ztSort;
+    const mul = dir === 'asc' ? 1 : -1;
+    return [...list].sort((a, b) => {
+      let va = a[key], vb = b[key];
+      const na = (va == null || va === ''), nb = (vb == null || vb === '');
+      if (na && nb) return 0;
+      if (na) return 1;
+      if (nb) return -1;
+      let x = va, y = vb;
+      if (typeof x === 'string' && typeof y === 'string') { const nx = Number(x), ny = Number(y); if (!isNaN(nx) && !isNaN(ny)) { x = nx; y = ny; } }
+      if (x < y) return -1 * mul;
+      if (x > y) return 1 * mul;
+      return (b['封板资金'] || 0) - (a['封板资金'] || 0);
+    });
+  }
   const cols = [
     { key: '代码', label: '代码', cls: 'grey' },
     { key: '名称', label: '名称' },
-    { key: '涨跌幅', label: '涨幅%', fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>'; } },
-    { key: '连板数', label: '连板', fmt: v => v != null ? v + '板' : '—' },
-    { key: '成交额', label: '成交额', fmt: fmtAmt },
-    { key: '封板资金', label: '封板资金', fmt: fmtAmt },
-    { key: '首次封板时间', label: '首封', fmt: fmtTime },
-    { key: '最后封板时间', label: '末封', fmt: fmtTime },
-    { key: '炸板次数', label: '炸板' },
-    { key: '换手率', label: '换手%', fmt: v => v != null ? v.toFixed(2) + '%' : '—' },
+    { key: '涨跌幅', label: '涨幅%', sortable: true, fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>'; } },
+    { key: '连板数', label: '连板', sortable: true, fmt: v => v != null ? v + '板' : '—' },
+    { key: '成交额', label: '成交额', sortable: true, fmt: fmtAmt },
+    { key: '封板资金', label: '封板资金', sortable: true, fmt: fmtAmt },
+    { key: '首次封板时间', label: '首封', sortable: true, fmt: fmtTime },
+    { key: '最后封板时间', label: '末封', sortable: true, fmt: fmtTime },
+    { key: '炸板次数', label: '炸板', sortable: true },
+    { key: '换手率', label: '换手%', sortable: true, fmt: v => v != null ? v.toFixed(2) + '%' : '—' },
     { key: '所属行业', label: '行业', cls: 'grey' },
   ];
   const tierLab = { '1': '首板', '2': '2板', '3': '3板', '4': '4板', '5plus': '5板以上' };
@@ -591,17 +618,25 @@ function baseOpts(extra){
       const want20 = cmVal === '20';
       list = list.filter(s => !!s._is20 === want20);
     }
-    const sorted = [...list].sort((a, b) => {
-      const la = a.连板数 || 0, lb = b.连板数 || 0;
-      if (la !== lb) return lb - la;
-      return (b.封板资金 || 0) - (a.封板资金 || 0);
-    });
+    // 行业筛选
+    const indSel = document.getElementById('ztIndSel');
+    const indVal = indSel ? indSel.value : 'all';
+    if (indVal !== 'all') {
+      list = list.filter(s => (s['所属行业'] || '') === indVal);
+    }
+    const sorted = applyZtSort(list);
     let h = '';
     if (activeTier) {
       h += '<div class="filter-bar">当前筛选：<b>' + tierLab[activeTier] + '</b> <span class="filter-x" onclick="window.__clearTier()">✕ 清除</span></div>';
     }
     h += '<div class="tbl-wrap" style="max-height:480px"><table><thead><tr>' +
-      cols.map(c => '<th>' + c.label + '</th>').join('') + '</tr></thead><tbody>';
+      cols.map(c => {
+        if (!c.sortable) return '<th' + (c.cls ? ' class="' + c.cls + '"' : '') + '>' + c.label + '</th>';
+        const active = ztSort.key === c.key;
+        const arr = active ? (ztSort.dir === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
+        const col = active ? 'var(--accent)' : '#aab0bd';
+        return '<th style="cursor:pointer;white-space:nowrap" onclick="window.__ztSort(\'' + c.key + '\')" title="点击排序">' + c.label + '<span style="font-size:10px;color:' + col + '">' + arr + '</span></th>';
+      }).join('') + '</tr></thead><tbody>';
     sorted.forEach(s => {
       const is20 = s._is20;
       const code = s['代码'];
@@ -628,7 +663,8 @@ function baseOpts(extra){
     h += '</tbody></table></div>';
     h += '<div style="margin-top:8px;font-size:12px;color:var(--sub)">共 <b>' + sorted.length + '</b> / ' + all.length + ' 只涨停股' +
       (activeTier ? '（已按梯队筛选）' : '') +
-      (cmVal !== 'all' ? '（已按' + (cmVal === '20' ? '20cm' : '10cm') + '筛选）' : '') + ' | 按「连板数↓ 封板资金↓」排序</div>';
+      (cmVal !== 'all' ? '（已按' + (cmVal === '20' ? '20cm' : '10cm') + '筛选）' : '') +
+      (indVal !== 'all' ? '（已按行业：' + esc(indVal) + '）' : '') + ' | 点击列头排序（当前：' + sortLabel() + '）</div>';
     ztBox.innerHTML = h;
   }
   // ---- 手风琴：点击个股行 → 紧跟该行展开/收起涨停原因 ----
@@ -680,6 +716,7 @@ function baseOpts(extra){
       activeTier = null;
       document.querySelectorAll('#tierCards .tier').forEach(x => x.classList.remove('on'));
       syncZtDate();
+      fillZtIndustries();
       renderTierCards();
       renderZtPool();
     };
@@ -688,6 +725,21 @@ function baseOpts(extra){
   const ztCmSel = document.getElementById('ztCmSel');
   if (ztCmSel) {
     ztCmSel.onchange = () => { renderZtPool(); };
+  }
+  // ---- 行业筛选器（涨停池，紧随涨跌幅限制）----
+  const ztIndSel = document.getElementById('ztIndSel');
+  function fillZtIndustries() {
+    if (!ztIndSel) return;
+    const cur = ztIndSel.value || 'all';
+    const set = new Set();
+    getZtRows().forEach(s => { const v = s['所属行业']; if (v) set.add(v); });
+    const arr = [...set].sort((a, b) => a.localeCompare(b, 'zh'));
+    ztIndSel.innerHTML = '<option value="all">全部</option>' + arr.map(x => '<option value="' + esc(x) + '">' + esc(x) + '</option>').join('');
+    ztIndSel.value = arr.includes(cur) ? cur : 'all';
+  }
+  if (ztIndSel) {
+    ztIndSel.onchange = () => { renderZtPool(); };
+    fillZtIndustries();
   }
 
   renderTierCards();
