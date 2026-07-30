@@ -133,7 +133,7 @@
   .cards .kpi:nth-child(5) .v{animation-delay:.27s}
   .cards .kpi:nth-child(6) .v{animation-delay:.33s}
   /* —— 液态玻璃（liquid glass）悬停质感 —— */
-  .kpi,.panel,.tier,.lvl{position:relative;will-change:transform;
+  .kpi,.panel,.tier,.lvl{position:relative;
     transition:transform .42s cubic-bezier(.22,.61,.36,1),box-shadow .42s cubic-bezier(.22,.61,.36,1),border-color .3s}
   /* 白光晕：随光标流动的主高光（置于内容之下） */
   .kpi::before,.panel::before,.tier::before,.lvl::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
@@ -143,8 +143,8 @@
   .kpi::after,.panel::after,.tier::after,.lvl::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
     background:radial-gradient(85px circle at var(--mx,50%) var(--my,28%),rgba(0,113,227,.06),rgba(0,113,227,0) 62%);
     opacity:0;transition:opacity .45s ease;z-index:0}
-  /* 悬停：轻抬升+微缩放，高光浮现 */
-  .kpi:hover,.panel:hover,.tier:hover,.lvl:hover{transform:translateY(-3px) scale(1.012);box-shadow:0 12px 34px rgba(20,23,33,.10)}
+  /* 悬停：轻抬升（不含缩放，避免文字被重新光栅化变糊）+ 高光浮现 */
+  .kpi:hover,.panel:hover,.tier:hover,.lvl:hover{transform:translateY(-3px);box-shadow:0 12px 34px rgba(20,23,33,.10)}
   .kpi:hover::before,.panel:hover::before,.tier:hover::before,.lvl:hover::before{opacity:1}
   .kpi:hover::after,.panel:hover::after,.tier:hover::after,.lvl:hover::after{opacity:1}
   /* 内容抬到高光之上，文字保持清晰 */
@@ -156,7 +156,7 @@
   /* ===== 方案1：空仓横幅悬停唤醒 ===== */
   .alert-banner{animation:none;transition:transform .3s cubic-bezier(.22,.61,.36,1),box-shadow .3s ease}
   .alert-banner .alert-risk{display:block;max-height:0;overflow:hidden;opacity:0;font-size:14px;font-weight:600;margin-top:0;color:#a32d2d;transition:max-height .35s ease,opacity .3s ease,margin-top .3s ease}
-  .alert-banner:hover{transform:scale(1.015);box-shadow:0 4px 22px rgba(224,24,24,.22);animation:alertPulse 1.8s ease-in-out infinite}
+  .alert-banner:hover{transform:translateY(-2px);box-shadow:0 4px 22px rgba(224,24,24,.22);animation:alertPulse 1.8s ease-in-out infinite}
   .alert-banner:hover .alert-risk{max-height:42px;opacity:1;margin-top:8px}
   /* ===== 方案2：涨停明细雷区探测器 ===== */
   .zt-row.zt-risk:hover{background:#fff5f5;animation:ztRowWarn 1s ease-in-out infinite}
