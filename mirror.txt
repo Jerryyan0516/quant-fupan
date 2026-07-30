@@ -9,32 +9,33 @@
 
 <style>
   :root{
-    --bg:#f6f7f9; --card:#ffffff; --line:#ececf0; --ink:#2a2d36; --sub:#9a9fae;
-    --red:#d93a3a; --green:#1a9e5c; --orange:#e8850c; --blue:#3b5bdb; --accent:#3b5bdb;
+    --bg:#fbfbfd; --card:#ffffff; --line:#e4e4e9; --ink:#1d1d1f; --sub:#454951;
+    --red:#e32d2d; --green:#15924f; --orange:#e0820a; --blue:#0071e3; --accent:#0071e3;
   }
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:-apple-system,"Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6}
-  .top{max-width:1120px;margin:0 auto;padding:26px 24px 0}
-  h1{font-size:20px;font-weight:600;letter-spacing:.5px}
-  .tagline{color:var(--sub);font-size:13px;margin-top:2px}
+  body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","PingFang SC","Helvetica Neue","Microsoft YaHei",Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  .top{max-width:1120px;margin:0 auto;padding:44px 24px 0}
+  h1{font-size:28px;font-weight:600;letter-spacing:-.5px}
+  .tagline{color:var(--sub);font-size:14px;margin-top:6px;font-weight:400}
   nav{display:flex;gap:4px;margin-top:18px;border-bottom:1px solid var(--line)}
-  nav button{background:none;border:none;padding:10px 18px;font-size:14px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+  nav button{background:none;border:none;padding:12px 20px;font-size:15px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:.2px;transition:color .15s}
   nav button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
-  main{max-width:1120px;margin:0 auto;padding:20px 24px 60px}
+  main{max-width:1120px;margin:0 auto;padding:32px 24px 80px}
   .tab{display:none}
   .tab.on{display:block}
-  .cards{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
-  .kpi{flex:1;min-width:120px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
-  .kpi .k{font-size:12px;color:var(--sub)}
-  .kpi .v{font-size:24px;font-weight:700;margin-top:2px}
-  .kpi .sub{font-size:11px;color:var(--sub);margin-top:4px;line-height:1.4}
-  .kpi .sub b{color:var(--text);font-weight:600}
+  .cards{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px}
+  .kpi{flex:1;min-width:130px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;transition:box-shadow .2s}
+  .kpi:hover{box-shadow:0 4px 18px rgba(0,0,0,.05)}
+  .kpi .k{font-size:13px;color:var(--sub);font-weight:500}
+  .kpi .v{font-size:30px;font-weight:700;margin-top:4px;letter-spacing:-.6px}
+  .kpi .sub{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.5}
+  .kpi .sub b{color:var(--ink);font-weight:600}
   .pos-banner{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:16px}
   .alert-banner{margin:0 0 16px;padding:15px 18px;border-radius:12px;background:linear-gradient(135deg,#fff4f4,#ffe1e1);border:1px solid #ffc9c9;border-left:6px solid #ff1a1a;color:#e01818;font-size:23px;font-weight:800;letter-spacing:.3px;line-height:1.45;text-align:center;box-shadow:0 2px 10px rgba(224,24,24,.10);animation:alertPulse 2.6s ease-in-out infinite}
   .alert-banner .warn{margin-right:8px}
   @keyframes alertPulse{0%,100%{box-shadow:0 2px 10px rgba(224,24,24,.10)}50%{box-shadow:0 3px 18px rgba(224,24,24,.30)}}
   .pos-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
-  .pos-title{font-size:14px;font-weight:600;color:var(--ink)}
+  .pos-title{font-size:15px;font-weight:600;color:var(--ink)}
   .pos-zone{font-size:15px;font-weight:600}
   .pos-track{width:100%;height:18px;background:linear-gradient(90deg,rgba(37,99,235,.42),rgba(245,179,1,.42),rgba(229,72,77,.42));border-radius:9px;overflow:hidden}
   .pos-fill{height:100%;border-radius:9px;transition:width .4s ease,background .4s ease}
@@ -47,10 +48,10 @@
   .extreme-tag{display:inline-block;padding:1px 7px;border-radius:4px;font-weight:700;margin:0 3px}
   .extreme-tag.on{background:#fde2e2;color:#c0392b}
   .extreme-tag.off{background:#f0f1f3;color:#aab0bb}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
-  .panel h2{font-size:14px;font-weight:600;margin-bottom:12px;color:#3a3e4a}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+  .panel h2{font-size:16px;font-weight:600;margin-bottom:14px;color:var(--ink)}
   .toolbar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
-  .toolbar button{border:1px solid var(--line);background:#fff;padding:5px 13px;border-radius:8px;cursor:pointer;font-size:13px;color:#555}
+  .toolbar button{border:1px solid var(--line);background:#fff;padding:6px 14px;border-radius:9px;cursor:pointer;font-size:14px;color:#454951;transition:all .15s}
   .toolbar button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
   .chart-box{position:relative;height:300px}
   .note{font-size:12px;color:var(--sub);margin-top:10px;line-height:1.8}
@@ -59,8 +60,8 @@
   .tier{flex:1;min-width:140px;background:#fafbfd;border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:pointer}
   .tier:hover{border-color:var(--accent);background:#f4f7ff}
   .tier.on{border-color:var(--accent);background:#eef2ff;box-shadow:0 0 0 2px rgba(59,91,219,.12)}
-  .tier .lab{font-size:12px;color:var(--sub)}
-  .tier .cnt{font-size:24px;font-weight:700;margin:3px 0}
+  .tier .lab{font-size:13px;color:var(--sub);font-weight:500}
+  .tier .cnt{font-size:26px;font-weight:700;margin:4px 0;letter-spacing:-.5px}
   .tier .goal{font-size:11px;color:var(--accent)}
   .tier-list{display:none;margin-top:10px}
   .tier.open .tier-list{display:block}
@@ -90,7 +91,7 @@
   .pager{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px}
   .pager button{border:1px solid var(--line);background:#fff;padding:5px 12px;border-radius:8px;cursor:pointer}
   .pager button:disabled{opacity:.4;cursor:default}
-  .news-link{display:block;width:fit-content;margin-top:10px;padding:10px 18px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:10px;font-size:14px;text-decoration:none}
+  .news-link{display:block;width:fit-content;margin-top:12px;padding:11px 20px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:11px;font-size:15px;text-decoration:none;font-weight:500;transition:opacity .15s}
   .news-link:hover{opacity:.92}
   /* 子标签（板块题材内部：行业资金流 / 概念板块） */
   .sub-nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line)}
@@ -107,19 +108,67 @@
   .reason-expand{display:none}
   .reason-expand.show{display:table-row}
   .reason-expand > td{padding:0;border-bottom:1px solid var(--line);background:#fbfcff}
-  .rz-inner{padding:12px 16px;font-size:13px;line-height:1.8;color:#2a2d36}
+  .rz-inner{padding:14px 18px;font-size:13px;line-height:1.8;color:var(--ink)}
   .rz-reason{font-weight:700;font-size:14px;margin-bottom:6px}
   .rz-detail{white-space:pre-wrap}
   .rz-src{margin-top:6px;font-size:12px;color:var(--sub)}
   .rz-empty{color:var(--sub);font-style:italic}
   /* 行业自定义下拉（始终向下展开） */
-  .zt-ind{position:relative;display:inline-block}
-  .zt-ind-btn{font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit}
+  .zt-ind{position:relative;display:inline-block;z-index:9999}
+  /* 工具栏含行业下拉，需整体抬到表格容器(z-index:1)之上，否则菜单被表格层叠覆盖 */
+  .panel > .toolbar{position:relative;z-index:5}
+  .zt-ind-btn{font-size:13px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:inherit;transition:border-color .15s}
   .zt-ind-btn .zt-ind-caret{font-size:10px;color:#aab0bd;line-height:1}
   .zt-ind.open .zt-ind-btn{border-color:var(--accent)}
-  .zt-ind-menu{position:absolute;top:calc(100% + 4px);left:0;z-index:50;min-width:128px;max-height:260px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 20px rgba(20,23,33,.12);padding:4px 0}
-  .zt-ind-item{padding:6px 12px;font-size:13px;color:var(--fg);cursor:pointer;white-space:nowrap}
+  .zt-ind-menu{position:absolute;top:calc(100% + 4px);left:0;z-index:10000;min-width:128px;max-height:260px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:6px;box-shadow:0 6px 20px rgba(20,23,33,.12);padding:4px 0}
+  .zt-ind-item{padding:7px 14px;font-size:13px;color:var(--ink);cursor:pointer;white-space:nowrap}
   .zt-ind-item:hover{background:#f2f4f8}
+  /* —— 极淡入场动效（KPI 数字） —— */
+  @keyframes kpiNumIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .kpi .v{animation:kpiNumIn .55s cubic-bezier(.22,.61,.36,1) both}
+  .cards .kpi:nth-child(1) .v{animation-delay:.03s}
+  .cards .kpi:nth-child(2) .v{animation-delay:.09s}
+  .cards .kpi:nth-child(3) .v{animation-delay:.15s}
+  .cards .kpi:nth-child(4) .v{animation-delay:.21s}
+  .cards .kpi:nth-child(5) .v{animation-delay:.27s}
+  .cards .kpi:nth-child(6) .v{animation-delay:.33s}
+  /* —— 液态玻璃（liquid glass）悬停质感 —— */
+  .kpi,.panel,.tier,.lvl{position:relative;will-change:transform;
+    transition:transform .42s cubic-bezier(.22,.61,.36,1),box-shadow .42s cubic-bezier(.22,.61,.36,1),border-color .3s}
+  /* 白光晕：随光标流动的主高光（置于内容之下） */
+  .kpi::before,.panel::before,.tier::before,.lvl::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(110px circle at var(--mx,50%) var(--my,28%),rgba(255,255,255,.85),rgba(255,255,255,0) 55%);
+    opacity:0;transition:opacity .4s ease;mix-blend-mode:overlay;z-index:0}
+  /* 冷调反射：极淡苹果蓝，增强玻璃折射感 */
+  .kpi::after,.panel::after,.tier::after,.lvl::after{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:radial-gradient(85px circle at var(--mx,50%) var(--my,28%),rgba(0,113,227,.06),rgba(0,113,227,0) 62%);
+    opacity:0;transition:opacity .45s ease;z-index:0}
+  /* 悬停：轻抬升+微缩放，高光浮现 */
+  .kpi:hover,.panel:hover,.tier:hover,.lvl:hover{transform:translateY(-3px) scale(1.012);box-shadow:0 12px 34px rgba(20,23,33,.10)}
+  .kpi:hover::before,.panel:hover::before,.tier:hover::before,.lvl:hover::before{opacity:1}
+  .kpi:hover::after,.panel:hover::after,.tier:hover::after,.lvl:hover::after{opacity:1}
+  /* 内容抬到高光之上，文字保持清晰 */
+  .kpi>*,.panel>*,.tier>*,.lvl>*{position:relative;z-index:1}
+  @media (prefers-reduced-motion:reduce){
+    .kpi .v{animation:none}
+    .kpi,.panel,.tier,.lvl{transition:none;will-change:auto}
+  }
+  /* ===== 方案1：空仓横幅悬停唤醒 ===== */
+  .alert-banner{animation:none;transition:transform .3s cubic-bezier(.22,.61,.36,1),box-shadow .3s ease}
+  .alert-banner .alert-risk{display:block;max-height:0;overflow:hidden;opacity:0;font-size:14px;font-weight:600;margin-top:0;color:#a32d2d;transition:max-height .35s ease,opacity .3s ease,margin-top .3s ease}
+  .alert-banner:hover{transform:scale(1.015);box-shadow:0 4px 22px rgba(224,24,24,.22);animation:alertPulse 1.8s ease-in-out infinite}
+  .alert-banner:hover .alert-risk{max-height:42px;opacity:1;margin-top:8px}
+  /* ===== 方案2：涨停明细雷区探测器 ===== */
+  .zt-row.zt-risk:hover{background:#fff5f5;animation:ztRowWarn 1s ease-in-out infinite}
+  .zt-row.zt-risk .zt-flag{display:none;margin-left:6px;color:#E24B4A;font-size:11px;font-weight:600;white-space:nowrap}
+  .zt-row.zt-risk:hover .zt-flag{display:inline-block}
+  @keyframes ztRowWarn{0%,100%{box-shadow:inset 5px 0 0 #E24B4A}50%{box-shadow:inset 5px 0 0 #ff7a7a}}
+  /* ===== 方案3：连板梯队衰退告警 ===== */
+  .tier.tier-risk .tier-badge{display:none;position:absolute;top:-9px;right:-9px;background:#E24B4A;color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:11px;z-index:2}
+  .tier.tier-risk:hover{animation:tierShake .5s ease-in-out}
+  .tier.tier-risk:hover .tier-badge{display:block;animation:tierBadgeBlink 1s steps(2,end) infinite}
+  @keyframes tierShake{0%,100%{transform:translateX(0)}20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(2px)}}
+  @keyframes tierBadgeBlink{0%,100%{opacity:1}50%{opacity:.35}}
 </style>
 </head>
 <body>
@@ -139,7 +188,7 @@
 <main>
   <!-- ===== 情绪波浪 ===== -->
   <section class="tab on" id="tab-wave">
-    <div class="alert-banner" id="alertBanner"><span class="warn">⚠</span>如果没有让你感到兴奋的机会，就果断选择空仓！</div>
+    <div class="alert-banner" id="alertBanner"><span class="warn">⚠</span>如果没有让你感到兴奋的机会，就果断选择空仓！<span class="alert-risk" id="alertRisk"></span></div>
     <div class="pos-banner" id="posBanner">
       <div class="pos-head">
         <span class="pos-title">次日仓位上限 · 动态管理（按情绪阶段）</span>
@@ -174,7 +223,7 @@
       <div class="tier-cards" id="tierCards"></div>
       <div class="note">点击上方方块，下方「当日涨停明细」即筛选为该梯队股票；再次点击或点「✕ 清除」恢复全部。点击任意个股行可展开「涨停原因」。</div></div>
     <div class="panel"><h2>当日涨停明细 <small id="ztDate" class="grey"></small></h2>
-      <div class="toolbar" id="ztDateTb" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:var(--sub)">日期：</span><select id="ztDateSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"></select><span style="font-size:12px;color:var(--sub)">涨跌幅限制：</span><select id="ztCmSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"><option value="all">全部</option><option value="10">10cm（主板）</option><option value="20">20cm（创业板/科创板）</option></select><span style="font-size:12px;color:var(--sub)">行业：</span><span class="zt-ind" id="ztIndWrap"><button type="button" class="zt-ind-btn" id="ztIndBtn"><span id="ztIndLabel">全部</span> <span class="zt-ind-caret">▾</span></button><div class="zt-ind-menu" id="ztIndMenu" style="display:none"></div></span></div>
+      <div class="toolbar" id="ztDateTb" style="margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span style="font-size:12px;color:var(--sub)">日期：</span><span class="zt-ind" id="ztDateWrap"><button type="button" class="zt-ind-btn" id="ztDateBtn"><span id="ztDateLabel">—</span> <span class="zt-ind-caret">▾</span></button><div class="zt-ind-menu" id="ztDateMenu" style="display:none"></div></span><span style="font-size:12px;color:var(--sub)">涨跌幅限制：</span><span class="zt-ind" id="ztCmWrap"><button type="button" class="zt-ind-btn" id="ztCmBtn"><span id="ztCmLabel">全部</span> <span class="zt-ind-caret">▾</span></button><div class="zt-ind-menu" id="ztCmMenu" style="display:none"></div></span><span style="font-size:12px;color:var(--sub)">行业：</span><span class="zt-ind" id="ztIndWrap"><button type="button" class="zt-ind-btn" id="ztIndBtn"><span id="ztIndLabel">全部</span> <span class="zt-ind-caret">▾</span></button><div class="zt-ind-menu" id="ztIndMenu" style="display:none"></div></span></div>
       <div id="ztPoolBox"></div>
       <div class="note">来自 stock_pools.db 的 zt_pool 表（按日期切换查看全量数据）。按连板数降序排列，连板数相同按封板强度排序。20cm 标注为蓝色标签。点击上方梯队方块可筛选。</div></div>
     <div class="panel"><h2>历史晋级率曲线（数量口径）<small class="grey"> 基于数据库精确计算</small></h2>
@@ -266,7 +315,7 @@
       <div class="panel"><h2>概念板块指数 <small class="grey">同花顺</small></h2>
         <div class="toolbar" id="conceptDateTb" style="margin-bottom:10px">
           <span style="font-size:12px;color:var(--sub);align-self:center">日期：</span>
-          <select id="conceptDateSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--fg)"></select>
+          <select id="conceptDateSel" style="font-size:13px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink)"></select>
         </div>
         <div class="chart-box" style="height:480px"><canvas id="conceptChart"></canvas></div>
         <div class="note" style="margin-top:-2px">涨幅 Top20 / 跌幅 Bottom20 分布（红=涨，绿=跌）。可按涨幅/资金净流入/成交额等排序。</div>
@@ -620,8 +669,7 @@ function baseOpts(extra){
     const all = getZtRows();
     let list = activeTier ? all.filter(s => tierKeyOf(s) === activeTier) : all;
     // 10cm / 20cm 筛选
-    const cmSel = document.getElementById('ztCmSel');
-    const cmVal = cmSel ? cmSel.value : 'all';
+    const cmVal = __ztCmVal || 'all';
     if (cmVal !== 'all') {
       const want20 = cmVal === '20';
       list = list.filter(s => !!s._is20 === want20);
@@ -647,13 +695,18 @@ function baseOpts(extra){
     sorted.forEach(s => {
       const is20 = s._is20;
       const code = s['代码'];
-      h += '<tr class="zt-row" data-code="' + code + '" onclick="window.__toggleReason(\'' + code + '\')">' + cols.map(c => {
+      const zbCnt = Number(s['炸板次数'] || 0);
+      const seal = s['封板资金'] != null ? Number(s['封板资金']) : null;
+      const risk = zbCnt >= 3 || (seal != null && seal < 5e7);
+      const riskTxt = zbCnt >= 3 ? ('炸板' + zbCnt + '次') : '封单弱';
+      h += '<tr class="zt-row' + (risk ? ' zt-risk' : '') + '" data-code="' + code + '" onclick="window.__toggleReason(\'' + code + '\')">' + cols.map(c => {
         let val = s[c.key];
         let cell = c.fmt ? c.fmt(val) : (val == null ? '—' : val);
         let cls = c.cls || '';
         if (c.key === '连板数' && val >= 3) cls = 'red';
         if (c.key === '炸板次数' && val > 5) cls = 'orange';
         if (c.key === '名称' && is20) cell += ' <span class="tag ok">20cm</span>';
+        if (c.key === '名称' && risk) cell += '<span class="zt-flag">⚠ ' + riskTxt + '·谨慎追高</span>';
         return '<td class="' + cls + '">' + cell + '</td>';
       }).join('') + '</tr>';
       // 紧跟该行的隐藏展开行（点击时 toggle 显示）
@@ -696,9 +749,16 @@ function baseOpts(extra){
     const tiers = [{ k: '5plus', lab: '5 板以上', goal: '明日冲 6 板' }, { k: '4', lab: '4 板', goal: '明日冲 5 板' }, { k: '3', lab: '3 板', goal: '明日冲 4 板' }, { k: '2', lab: '2 板', goal: '明日冲 3 板' }, { k: '1', lab: '首板', goal: '明日冲 2 板' }];
     const cnt = {}; tiers.forEach(t => cnt[t.k] = 0);
     getZtRows().forEach(s => { cnt[tierKeyOf(s)]++; });
+    // 最高梯队（连板高度）：用于判定上方梯队是否断档
+    const order = ['1', '2', '3', '4', '5plus'];
+    let maxTier = '1';
+    for (const k of ['5plus', '4', '3', '2', '1']) { if (cnt[k] > 0) { maxTier = k; break; } }
     tiers.forEach(t => {
       const div = document.createElement('div'); div.className = 'tier'; div.dataset.tier = t.k;
-      div.innerHTML = `<div class="lab">${t.lab}</div><div class="cnt">${cnt[t.k]}</div><div class="goal">${t.goal}</div>`;
+      // 风险：高于当前连板高度、且当日为 0 的梯队（断档/衰退信号）
+      const isRisk = order.indexOf(t.k) > order.indexOf(maxTier) && cnt[t.k] === 0;
+      if (isRisk) div.classList.add('tier-risk');
+      div.innerHTML = `<div class="lab">${t.lab}</div><div class="cnt">${cnt[t.k]}</div><div class="goal">${t.goal}</div>` + (isRisk ? '<div class="tier-badge">风险</div>' : '');
       div.onclick = () => {
         const was = div.classList.contains('on');
         document.querySelectorAll('#tierCards .tier').forEach(x => x.classList.remove('on'));
@@ -709,30 +769,51 @@ function baseOpts(extra){
     });
   }
 
-  // ---- 日期筛选器（涨停池）----
-  const ztDateSel = document.getElementById('ztDateSel');
-  if (ztDateSel && ZT.dates && ZT.dates.length) {
-    ZT.dates.forEach(d => {
-      const opt = document.createElement('option');
-      opt.value = d; opt.textContent = d;
-      if (d === __ztCurDate) opt.selected = true;
-      ztDateSel.appendChild(opt);
+  // ---- 日期筛选器（自定义下拉，向下展开）----
+  (function(){
+    const wrap=document.getElementById('ztDateWrap'), btn=document.getElementById('ztDateBtn'),
+          menu=document.getElementById('ztDateMenu'), label=document.getElementById('ztDateLabel');
+    if(!btn||!menu||!ZT.dates||!ZT.dates.length) return;
+    menu.innerHTML = ZT.dates.map(d=>'<div class="zt-ind-item" data-v="'+esc(d)+'">'+esc(d)+'</div>').join('');
+    menu.querySelectorAll('.zt-ind-item').forEach(it=>{
+      it.onclick=(e)=>{ e.stopPropagation();
+        __ztCurDate = it.dataset.v;
+        label.textContent = it.dataset.v;
+        menu.style.display='none'; if(wrap) wrap.classList.remove('open');
+        activeTier=null;
+        document.querySelectorAll('#tierCards .tier').forEach(x=>x.classList.remove('on'));
+        syncZtDate(); fillZtIndustries(); renderTierCards(); renderZtPool();
+      };
     });
-    ztDateSel.onchange = () => {
-      __ztCurDate = ztDateSel.value;
-      activeTier = null;
-      document.querySelectorAll('#tierCards .tier').forEach(x => x.classList.remove('on'));
-      syncZtDate();
-      fillZtIndustries();
-      renderTierCards();
-      renderZtPool();
+    label.textContent = __ztCurDate;
+    btn.onclick=(e)=>{ e.stopPropagation();
+      const open=menu.style.display==='block';
+      menu.style.display=open?'none':'block';
+      if(wrap) wrap.classList.toggle('open',!open);
     };
-  }
-  // ---- 10cm / 20cm 筛选器（涨停池，紧随日期）----
-  const ztCmSel = document.getElementById('ztCmSel');
-  if (ztCmSel) {
-    ztCmSel.onchange = () => { renderZtPool(); };
-  }
+  })();
+  // ---- 10cm / 20cm 筛选器（自定义下拉）----
+  let __ztCmVal = 'all';
+  (function(){
+    const wrap=document.getElementById('ztCmWrap'), btn=document.getElementById('ztCmBtn'),
+          menu=document.getElementById('ztCmMenu'), label=document.getElementById('ztCmLabel');
+    if(!btn||!menu) return;
+    const opts=[{v:'all',t:'全部'},{v:'10',t:'10cm（主板）'},{v:'20',t:'20cm（创业板/科创板）'}];
+    menu.innerHTML=opts.map(o=>'<div class="zt-ind-item" data-v="'+o.v+'">'+o.t+'</div>').join('');
+    menu.querySelectorAll('.zt-ind-item').forEach(it=>{
+      it.onclick=(e)=>{ e.stopPropagation();
+        __ztCmVal = it.dataset.v;
+        label.textContent=it.textContent;
+        menu.style.display='none'; if(wrap) wrap.classList.remove('open');
+        renderZtPool();
+      };
+    });
+    btn.onclick=(e)=>{ e.stopPropagation();
+      const open=menu.style.display==='block';
+      menu.style.display=open?'none':'block';
+      if(wrap) wrap.classList.toggle('open',!open);
+    };
+  })();
   // ---- 行业筛选器（自定义下拉，始终向下展开）----
   const ztIndWrap = document.getElementById('ztIndWrap');
   const ztIndBtn = document.getElementById('ztIndBtn');
@@ -770,10 +851,10 @@ function baseOpts(extra){
     fillZtIndustries();
   }
   document.addEventListener('click', () => {
-    if (ztIndMenu && ztIndMenu.style.display === 'block') {
-      ztIndMenu.style.display = 'none';
-      if (ztIndWrap) ztIndWrap.classList.remove('open');
-    }
+    [['ztDateMenu','ztDateWrap'],['ztCmMenu','ztCmWrap'],['ztIndMenu','ztIndWrap']].forEach(([m,w])=>{
+      const menu=document.getElementById(m), wrap=document.getElementById(w);
+      if(menu && menu.style.display==='block'){ menu.style.display='none'; if(wrap) wrap.classList.remove('open'); }
+    });
   });
 
   renderTierCards();
@@ -1206,6 +1287,34 @@ function baseOpts(extra){
   }
 
   window.__registerTab('concept', ()=>{ renderTable(); renderChart(); syncTb(); });
+})();
+</script>
+<script>
+/* 液态玻璃：光标位置实时驱动高光（事件委托，覆盖动态生成元素） */
+(function(){
+  var sel='.kpi,.panel,.tier,.lvl';
+  document.addEventListener('mousemove',function(e){
+    var el=e.target.closest(sel);
+    if(!el) return;
+    var r=el.getBoundingClientRect();
+    el.style.setProperty('--mx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    el.style.setProperty('--my',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  },{passive:true});
+})();
+/* ===== 方案1：空仓横幅悬停唤醒——填入当日风险数字 ===== */
+(function(){
+  try{
+    const r=document.getElementById('alertRisk'); if(!r) return;
+    const Wg=(typeof W!=='undefined')?W:null, Bg=(typeof BOARD!=='undefined')?BOARD:null;
+    if(!Wg||!Wg.length) return;
+    const num=v=>{if(v==null)return null;const n=Number(v);return isNaN(n)?null:n;};
+    const d=Wg[Wg.length-1];
+    const zt=num(d.zt_total), dt=num(d.dt_count);
+    let maxLb=0;
+    if(Bg&&Bg[d.date]){maxLb=Math.max(Bg[d.date].max10||0,Bg[d.date].max20||0);}
+    if(!maxLb){maxLb=Math.max(num(d.b5plus_10cm)?5:0,num(d.b4plus_10cm)?4:0,num(d.b3_10cm)?3:0,num(d.b2_10cm)?2:0,num(d.zt_10cm)?1:0);}
+    r.textContent='今日涨停 '+(zt!=null?zt:'-')+' 家 · 跌停 '+(dt!=null?dt:'-')+' 家 · 最高连板 '+maxLb+' 板';
+  }catch(e){}
 })();
 </script>
 </body>
