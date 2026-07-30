@@ -567,6 +567,7 @@ function baseOpts(extra){
     { key: '名称', label: '名称' },
     { key: '涨跌幅', label: '涨幅%', fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>'; } },
     { key: '连板数', label: '连板', fmt: v => v != null ? v + '板' : '—' },
+    { key: '成交额', label: '成交额', fmt: fmtAmt },
     { key: '封板资金', label: '封板资金', fmt: fmtAmt },
     { key: '首次封板时间', label: '首封', fmt: fmtTime },
     { key: '最后封板时间', label: '末封', fmt: fmtTime },
