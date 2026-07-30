@@ -6,6 +6,11 @@
 <title>复盘 · A股打板情绪</title>
 <!-- Chart.js 改为按需懒加载（见 ensureChart），不再阻塞首屏解析 -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script>
+/* 纪律打卡仅本地：线上/镜像域名隐藏打卡 UI（数据本就只存本机 localStorage，绝不上传） */
+(function(){var h=location.hostname,p=location.protocol;
+ if(!(p==='file:'||h==='localhost'||h==='127.0.0.1'||h==='::1')) document.documentElement.className+=' no-checkin';})();
+</script>
 
 <style>
   :root{
@@ -181,6 +186,8 @@
   .disc-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
   .disc-export{background:#eef0f3;color:#1d1d1f;border:1px solid #d9dde3;border-radius:11px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;transition:transform .2s,box-shadow .2s}
   .disc-export:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(20,23,33,.10)}
+  html.no-checkin .disc-bar,html.no-checkin .disc-panel{display:none!important}
+  .disc-goal{font-size:11px;font-weight:700;color:var(--accent);margin-left:5px;letter-spacing:0}
   .disc-panel .disc-summary{display:flex;gap:26px;flex-wrap:wrap;font-size:14px;color:var(--sub);margin-bottom:14px}
   .disc-panel .disc-summary b{font-size:18px;color:var(--ink);font-weight:700;margin-right:4px}
   .disc-strip{display:grid;grid-template-columns:repeat(31,1fr);gap:4px}
@@ -228,7 +235,7 @@
     <button data-tab="db">数据库表</button>
   </nav>
     <div class="disc-bar">
-      <div class="disc-stat"><span class="n empty" id="discEmptyTotal">0</span><span class="l">本月空仓</span></div>
+      <div class="disc-stat"><span class="n empty" id="discEmptyTotal">0</span><span class="l">本月空仓<b class="disc-goal">目标≥10</b></span></div>
       <div class="disc-stat"><span class="n" id="discEmptyStreak">0</span><span class="l">连续空仓</span></div>
       <div class="disc-stat"><span class="n" id="discOpenStreak">0</span><span class="l">连续持仓</span></div>
       <div class="disc-actions">
@@ -1415,6 +1422,8 @@ function baseOpts(extra){
 /* 纪律打卡：仅存 localStorage，绝不上传 */
 (function(){
   var KEY='fupan_checkin_v1';
+  var _PRO=location.protocol,_LOC=location.hostname;
+  if(!(_PRO==='file:'||_LOC==='localhost'||_LOC==='127.0.0.1'||_LOC==='::1')) return;
   function load(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
   function save(o){try{localStorage.setItem(KEY,JSON.stringify(o));}catch(e){}}
   function ymd(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
