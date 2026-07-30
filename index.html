@@ -822,7 +822,14 @@ function baseOpts(extra){
     box.innerHTML = '<div class="note" style="font-size:13px">暂无行业资金流数据：' + (S.error || 'akshare 抓取失败') + '。请确认 akshare 已安装且网络可达。</div>';
     return;
   }
-  function num(v) { if (v == null) return 0; const n = Number(v); return isNaN(n) ? 0 : n; }
+  // 数值化：akshare 排行口径返回的是字符串（如 "15.77%"），需剥离 % / 逗号 / 单位后再转数
+  function num(v) {
+    if (v == null) return 0;
+    if (typeof v === 'string') v = v.replace(/[%,\s亿万元]/g, '');
+    const n = Number(v);
+    return isNaN(n) ? 0 : n;
+  }
+  function isNil(v) { return v == null || v === '' || v === '-' || v === '--'; }
   let curSym = "即时";
   // 键名兼容：按钮 data-sym 是「3日排行」，后端 S.data 键是「3日」——两种写法都能取到
   function getRows() { const d = S.data[curSym] || S.data[String(curSym).replace('排行','')] || S.data[String(curSym)+'排行']; return Array.isArray(d) ? d : []; }
@@ -843,15 +850,15 @@ function baseOpts(extra){
     const cols = [
       { key: '序号', label: '#' },
       { key: '行业', label: '行业' },
-      { key: pctKey, label: pctLabel, fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>'; } },
-      { key: '流入资金', label: '流入(亿)', fmt: v => v != null ? v.toFixed(2) : '—' },
-      { key: '流出资金', label: '流出(亿)', fmt: v => v != null ? v.toFixed(2) : '—' },
-      { key: '净额', label: '净额(亿)', fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '</span>'; } },
+      { key: pctKey, label: pctLabel, fmt: v => { if (isNil(v)) return '—'; const n = num(v); const c = n >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (n >= 0 ? '+' : '') + n.toFixed(2) + '%</span>'; } },
+      { key: '流入资金', label: '流入(亿)', fmt: v => isNil(v) ? '—' : num(v).toFixed(2) },
+      { key: '流出资金', label: '流出(亿)', fmt: v => isNil(v) ? '—' : num(v).toFixed(2) },
+      { key: '净额', label: '净额(亿)', fmt: v => { if (isNil(v)) return '—'; const n = num(v); const c = n >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (n >= 0 ? '+' : '') + n.toFixed(2) + '</span>'; } },
       { key: '公司家数', label: '家数' },
     ];
     if (rows.length && '领涨股' in rows[0]) {
       cols.push({ key: '领涨股', label: '领涨股' });
-      cols.push({ key: '领涨股-涨跌幅', label: '领涨涨幅', fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>'; } });
+      cols.push({ key: '领涨股-涨跌幅', label: '领涨涨幅', fmt: v => { if (isNil(v)) return '—'; const n = num(v); const c = n >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (n >= 0 ? '+' : '') + n.toFixed(2) + '%</span>'; } });
       if ('当前价' in rows[0]) cols.push({ key: '当前价', label: '现价', cls: 'grey' });
     }
     return cols;
@@ -914,10 +921,8 @@ function baseOpts(extra){
         let val = s[c.key];
         let cell = c.fmt ? c.fmt(val, s) : (val == null ? '—' : val);
         let cls = '';
-        if (c.key === '净额') cls = val >= 0 ? 'red' : 'green';
-        if (c.key === '涨跌幅') cls = val >= 0 ? 'red' : 'green';
-        if (c.key === '领涨股-涨跌幅') cls = val >= 0 ? 'red' : 'green';
-        if (c.key === '行业' && s['净额'] > 0 && netRank[s['行业']] < 3) cell += ' <span class="tag ok">热</span>';
+        if (c.key === '净额' || c.key === '涨跌幅' || c.key === '阶段涨跌幅' || c.key === '行业-涨跌幅' || c.key === '领涨股-涨跌幅') cls = num(val) >= 0 ? 'red' : 'green';
+        if (c.key === '行业' && num(s['净额']) > 0 && netRank[s['行业']] < 3) cell += ' <span class="tag ok">热</span>';
         return '<td class="' + cls + '">' + cell + '</td>';
       }).join('') + '</tr>';
     });
@@ -957,11 +962,17 @@ function baseOpts(extra){
     symTb.querySelectorAll('button').forEach(b => {
       b.onclick = () => {
         curSym = b.dataset.sym;
-        // 切换口径后，该口径可能不含当前排序列（如排行无领涨股），回退到净额
-        const cols = buildCols(getRows());
-        if (!cols.some(c => c.key === sortKey)) { sortKey = '净额'; sortDir = 'desc'; }
-        rebuildRank();
-        renderTable(); renderChart(); syncTb(); syncSymTb();
+        syncSymTb();   // 先高亮，避免后续异常导致按钮看起来「点了没反应」
+        try {
+          // 切换口径后，该口径可能不含当前排序列（如排行无领涨股），回退到净额
+          const cols = buildCols(getRows());
+          if (!cols.some(c => c.key === sortKey)) { sortKey = '净额'; sortDir = 'desc'; }
+          rebuildRank();
+          renderTable(); renderChart(); syncTb();
+        } catch (err) {
+          box.innerHTML = '<div class="note" style="font-size:13px;color:#e5484d">渲染「' + curSym + '」失败：' + (err && err.message ? err.message : err) + '</div>';
+          console.error('[sector] render failed', err);
+        }
       };
     });
   }
