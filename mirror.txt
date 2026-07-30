@@ -189,6 +189,8 @@
   html.no-checkin .disc-bar,html.no-checkin .disc-panel{display:none!important}
   .disc-goal{font-size:11px;font-weight:700;color:var(--accent);margin-left:5px;letter-spacing:0}
   .cc-yesterday{margin:10px 2px 2px;padding:10px 12px;background:#f3f6fb;border-left:3px solid var(--accent);border-radius:9px;font-size:13px;color:#3a4658;line-height:1.5}
+  .cc-refl{margin:10px 2px 2px;padding:8px 12px 12px;background:#fbfaf2;border-left:3px solid #c9a227;border-radius:9px;font-size:13px;color:#3a4658;line-height:1.5}
+  .cc-refl .cc-q{margin:10px 0 9px}
   .cc-sep{height:1px;background:linear-gradient(90deg,transparent,#e3e7ee,transparent);margin:14px 0 4px}
   .cc-dev{margin:8px 2px 2px;padding:9px 12px;border-radius:9px;font-size:13px;line-height:1.5;border:1px solid transparent}
   .cc-dev .lbl{color:#7a8294;font-weight:600}
@@ -1422,6 +1424,21 @@ function baseOpts(extra){
     </div>
     <div class="cc-yesterday" id="ccYesterday" style="display:none"></div>
     <div class="cc-dev" id="ccDev" style="display:none"></div>
+    <div class="cc-refl" id="ccRefl" style="display:none">
+      <div class="cc-q">昨日计划执行反思<span class="req">*</span></div>
+      <div class="cc-row" id="ccReflResult">
+        <button type="button" data-v="exec">按计划执行 ✓</button>
+        <button type="button" data-v="part">部分执行（偏差已记录）</button>
+        <button type="button" data-v="none">未执行</button>
+      </div>
+      <div id="ccReflReasonBox" style="display:none">
+        <div class="cc-q">未执行原因</div>
+        <textarea id="ccReflReason" class="ccNote" placeholder="盘面没给信号？临时改主意？为什么没按计划来"></textarea>
+      </div>
+    </div>
+    <div class="cc-sep"></div>
+    <div class="cc-q">今日盘面总结<span class="grey">（可选）</span></div>
+    <textarea id="ccSummary" class="ccNote" placeholder="今天赚钱效应如何？亏钱效应如何？板块情绪冷热？有没有让你兴奋的机会？"></textarea>
     <div class="cc-sep"></div>
     <div class="cc-q">明日计划<span class="req">*</span></div>
     <div class="cc-row" id="ccPlanOpen">
@@ -1455,9 +1472,10 @@ function baseOpts(extra){
   function today(){return ymd(new Date());}
   function monthDays(y,m){return new Date(y,m+1,0).getDate();}
   var data=load();
-  var sel={excited:null,state:null,size:null,planOpen:null,planSize:null,planReason:'',planAction:''};
+  var sel={excited:null,state:null,size:null,planOpen:null,planSize:null,planReason:'',planAction:'',reflResult:null,reflReason:'',summary:''};
   var SIZE_PCT={'轻仓':25,'半仓':50,'重仓':75,'满仓':100};
   var DEV_WARN=25;
+  function yesterdayRec(){ var dp=today().split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); return data[ymd(yd)]; }
   function $(id){return document.getElementById(id);}
   function render(){
     var now=new Date();
@@ -1536,21 +1554,33 @@ function baseOpts(extra){
     $('ccPlanFields').style.display=(sel.planOpen==='1')?'block':'none';
     var dp=t.split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); var yk=ymd(yd);
     var yr=data[yk]; var yel=$('ccYesterday');
-    if(yr&&yr.plan&&yr.plan.open!=null){
+    var hasPlan=!!(yr&&yr.plan&&yr.plan.open!=null);
+    if(hasPlan){
       var pp=yr.plan; var txt='昨日计划（'+yk+'）：'+(pp.open?'明天开仓':'明天不开');
       if(pp.open){ txt+=(pp.size?' · '+pp.size:''); if(pp.reason) txt+=' · 理由：'+pp.reason; }
       if(pp.action) txt+=' · 操作：'+pp.action;
       yel.textContent=txt; yel.style.display='block';
     } else { yel.style.display='none'; }
+    var sel_refl=rec.refl||null;
+    sel.reflResult=sel_refl&&sel_refl.result?sel_refl.result:null;
+    sel.reflReason=sel_refl?sel_refl.reason||'':'';
+    sel.summary=rec.summary||'';
+    $('ccRefl').style.display=hasPlan?'block':'none';
+    setSel('ccReflResult',sel.reflResult);
+    $('ccReflReason').value=sel.reflReason;
+    $('ccReflReasonBox').style.display=(sel.reflResult==='none')?'block':'none';
+    $('ccSummary').value=sel.summary;
     updateSubmit();
     updateDev();
     $('checkinMask').style.display='flex';
   }
   function updateSubmit(){
+    var yp=yesterdayRec(); var needRefl=!!(yp&&yp.plan&&yp.plan.open!=null);
     var ok=sel.excited!=null && sel.state!=null && sel.planOpen!=null;
+    if(ok && needRefl && !sel.reflResult) ok=false;
     if(ok && sel.planOpen==='1' && !sel.planSize) ok=false;
     $('ccSubmit').disabled=!ok;
-    $('ccHint').textContent=sel.excited==null?'请先回答必答问题':(sel.state==null?'请选择今日状态':(sel.planOpen==null?'请决定明日计划（开/不开）':(sel.planOpen==='1'&&!sel.planSize?'请选择计划仓位':'点击记录')));
+    $('ccHint').textContent=sel.excited==null?'请先回答必答问题':(sel.state==null?'请选择今日状态':(needRefl&&!sel.reflResult?'请完成昨日计划执行反思':(sel.planOpen==null?'请决定明日计划（开/不开）':(sel.planOpen==='1'&&!sel.planSize?'请选择计划仓位':'点击记录'))));
   }
   function updateDev(){
     var dp=today().split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); var yk=ymd(yd);
@@ -1586,6 +1616,7 @@ function baseOpts(extra){
       setSel(rowId,sel[key]);
       if(key==='state'){ $('ccOpenFields').style.display=(sel.state==='open')?'block':'none'; }
       if(key==='planOpen'){ $('ccPlanFields').style.display=(sel.planOpen==='1')?'block':'none'; }
+      if(key==='reflResult'){ $('ccReflReasonBox').style.display=(sel.reflResult==='none')?'block':'none'; }
       if(key==='state'||key==='size'){ updateDev(); }
       updateSubmit();
     });
@@ -1597,6 +1628,13 @@ function baseOpts(extra){
     var rec={excited:sel.excited==='1',state:sel.state};
     if(sel.state==='open'){ rec.size=sel.size||null; rec.note=$('ccNote').value.trim(); }
     else { rec.size=null; rec.note=''; }
+    var yp=yesterdayRec();
+    if(yp&&yp.plan&&yp.plan.open!=null){
+      var refl={result:sel.reflResult};
+      if(sel.reflResult==='none') refl.reason=$('ccReflReason').value.trim();
+      rec.refl=refl;
+    }
+    rec.summary=$('ccSummary').value.trim();
     var plan=null;
     if(sel.planOpen!=null){
       plan={open:sel.planOpen==='1'};
@@ -1617,6 +1655,7 @@ function baseOpts(extra){
   bindRow('ccSize','size');
   bindRow('ccPlanOpen','planOpen');
   bindRow('ccPlanSize','planSize');
+  bindRow('ccReflResult','reflResult');
   render();
   /* 导出 Excel(CSV+BOM)：仅本机下载，绝不上传；可直接用 Excel 打开 */
   function csvCell(v){
@@ -1628,7 +1667,7 @@ function baseOpts(extra){
     var all=load();
     var dates=Object.keys(all).sort();
     if(!dates.length){ alert('还没有打卡记录，先点「今日打卡」记一笔吧'); return; }
-    var rows=[['日期','兴奋机会','状态','仓位档位','仓位偏差','开仓原因与后续思路','明日计划','计划仓位','计划开仓理由','计划操作']];
+    var rows=[['日期','兴奋机会','状态','仓位档位','仓位偏差','昨日计划执行反思','今日盘面总结','开仓原因与后续思路','明日计划','计划仓位','计划开仓理由','计划操作']];
     dates.forEach(function(d){
       var r=all[d]; var p=r.plan;
       var devTxt='';
@@ -1639,7 +1678,9 @@ function baseOpts(extra){
         if(r.state==='empty'){ devTxt='空仓(低于计划'+pp+'%)'; }
         else if(r.state==='open'&&r.size&&(r.size in SIZE_PCT)){ var dd=SIZE_PCT[r.size]-pp; devTxt=(dd>0?'+':'')+dd+'%'; }
       }
-      rows.push([d, r.excited?'有':'无', r.state==='empty'?'空仓':'开仓', r.state==='open'?(r.size||''):'', devTxt, r.note||'',
+      var reflTxt='';
+      if(r.refl){ reflTxt=(r.refl.result==='exec'?'按计划执行 ✓':(r.refl.result==='part'?'部分执行（偏差已记录）':'未执行'))+(r.refl.result==='none'&&r.refl.reason?('：'+r.refl.reason):''); }
+      rows.push([d, r.excited?'有':'无', r.state==='empty'?'空仓':'开仓', r.state==='open'?(r.size||''):'', devTxt, reflTxt, r.summary||'',
         p?(p.open?'明天开仓':'明天不开'):'', p&&p.open?(p.size||''):'', p?p.reason||'':'', p?p.action||'':'']);
     });
     var total=dates.length, empty=0, open=0, heavy=0, excited=0;
