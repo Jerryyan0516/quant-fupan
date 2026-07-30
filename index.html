@@ -824,7 +824,8 @@ function baseOpts(extra){
   }
   function num(v) { if (v == null) return 0; const n = Number(v); return isNaN(n) ? 0 : n; }
   let curSym = "即时";
-  function getRows() { const d = S.data[curSym]; return Array.isArray(d) ? d : []; }
+  // 键名兼容：按钮 data-sym 是「3日排行」，后端 S.data 键是「3日」——两种写法都能取到
+  function getRows() { const d = S.data[curSym] || S.data[String(curSym).replace('排行','')] || S.data[String(curSym)+'排行']; return Array.isArray(d) ? d : []; }
 
   // 净额降序排名（用于「热」标签，仅当前口径内）
   let netRank = {};
@@ -835,10 +836,14 @@ function baseOpts(extra){
 
   // 动态列：即时含领涨股/领涨涨幅/现价；排行不含
   function buildCols(rows) {
+    // 涨幅列自适应：akshare 各口径列名不同（涨跌幅 / 阶段涨跌幅 / 行业-涨跌幅），按优先级探测
+    const r0 = rows.length ? rows[0] : {};
+    const pctKey = ['涨跌幅', '阶段涨跌幅', '行业-涨跌幅'].find(k => k in r0) || '涨跌幅';
+    const pctLabel = (pctKey === '阶段涨跌幅') ? '阶段涨幅%' : '涨幅%';
     const cols = [
       { key: '序号', label: '#' },
       { key: '行业', label: '行业' },
-      { key: '涨跌幅', label: '涨幅%', fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>'; } },
+      { key: pctKey, label: pctLabel, fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '%</span>'; } },
       { key: '流入资金', label: '流入(亿)', fmt: v => v != null ? v.toFixed(2) : '—' },
       { key: '流出资金', label: '流出(亿)', fmt: v => v != null ? v.toFixed(2) : '—' },
       { key: '净额', label: '净额(亿)', fmt: v => { if (v == null) return '—'; const c = v >= 0 ? 'red' : 'green'; return '<span class="' + c + '">' + (v >= 0 ? '+' : '') + v.toFixed(2) + '</span>'; } },
