@@ -1657,6 +1657,8 @@ function baseOpts(extra){
   bindRow('ccPlanSize','planSize');
   bindRow('ccReflResult','reflResult');
   render();
+  /* 每次刷新自动弹窗提醒：本地域名且当天尚未打卡时，自动打开打卡弹窗（内含昨日计划回显 + 写今日计划入口） */
+  if(!data[today()]){ openModal(); }
   /* 导出 Excel(CSV+BOM)：仅本机下载，绝不上传；可直接用 Excel 打开 */
   function csvCell(v){
     v=(v==null)?'':String(v);
