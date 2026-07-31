@@ -254,6 +254,15 @@
   .hist-section .hs-label{font-size:11px;font-weight:700;color:#8a90a0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
   .hist-section .hs-value{color:#1d1d1f;font-weight:500}
   .hist-section .hs-sub{color:#5a6a7a;margin-top:4px;font-size:12px}
+  /* 收盘打卡提醒弹窗 */
+  .remind-mask{position:fixed;inset:0;background:rgba(15,17,23,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:20002;padding:20px}
+  .remind-card{width:400px;max-width:100%;background:#fff;border-radius:20px;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.28);text-align:center}
+  .remind-icon{font-size:48px;margin-bottom:14px}
+  .remind-title{font-size:19px;font-weight:700;color:#1d1d1f;margin-bottom:8px}
+  .remind-sub{font-size:14px;color:#5a6a7a;margin-bottom:22px;line-height:1.5}
+  .remind-btn{display:inline-block;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px 32px;font-size:16px;font-weight:600;cursor:pointer;transition:all .2s}
+  .remind-btn:hover{box-shadow:0 8px 24px rgba(26,158,92,.30);transform:translateY(-1px)}
+  .remind-skip{display:block;margin-top:14px;font-size:13px;color:#8a90a0;cursor:pointer;background:none;border:none}
   @media(max-width:560px){.disc-strip{grid-template-columns:repeat(15,1fr)}}
 </style>
 </head>
@@ -1495,6 +1504,15 @@ function baseOpts(extra){
     <div id="histBody"></div>
   </div>
 </div>
+<div class="remind-mask" id="remindMask" style="display:none">
+  <div class="remind-card">
+    <div class="remind-icon">📝</div>
+    <div class="remind-title">收盘了，该写今日复盘了</div>
+    <div class="remind-sub">花 30 秒记录今天的交易纪律：<br>状态 · 反思 · 总结 · 明日计划</div>
+    <button class="remind-btn" id="remindGoBtn" type="button">去打卡 →</button>
+    <button class="remind-skip" id="remindSkipBtn" type="button">稍后再说</button>
+  </div>
+</div>
 <script>
 /* 纪律打卡：仅存 localStorage，绝不上传 */
 (function(){
@@ -1770,9 +1788,44 @@ function baseOpts(extra){
   }
   $('histClose').addEventListener('click',function(){$('histMask').style.display='none';});
   $('histMask').addEventListener('click',function(e){ if(e.target===$('histMask')) $('histMask').style.display='none'; });
+  /* 收盘提醒弹窗：去打卡 / 稍后再说 */
+  $('remindGoBtn').addEventListener('click',function(){
+    $('remindMask').style.display='none';
+    openModal();
+  });
+  $('remindSkipBtn').addEventListener('click',function(){
+    $('remindMask').style.display='none';
+  });
+  $('remindMask').addEventListener('click',function(e){ if(e.target===$('remindMask')) $('remindMask').style.display='none'; });
   render();
-  /* 每次刷新自动弹窗提醒：本地域名且当天尚未打卡时，自动打开打卡弹窗（内含昨日计划回显 + 写今日计划入口） */
-  if(!data[today()] && !isOffDay(today())){ openModal(); }
+  /* ===== 智能弹窗：按时间+打卡状态三段式 =====
+     < 15:00 → 弹昨日记录（盘中/盘前看计划）
+     ≥ 15:00 且未打卡 → 弹收盘提醒（引导去打卡）
+     ≥ 15:00 且已打卡 → 弹今日记录（复盘后回顾）
+   */
+  (function(){
+    var h=new Date().getHours();
+    var m=new Date().getMinutes();
+    var nowMin=h*60+m;
+    var CUTOFF=15*60; /* 15:00 = 900 分钟 */
+    var t=today();
+    if(isOffDay(t)) return; /* 非交易日不弹任何东西 */
+
+    if(nowMin < CUTOFF){
+      /* 盘前/盘中：弹昨日记录（让用户看到自己写的明日计划） */
+      var dp=t.split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); var yk=ymd(yd);
+      if(data[yk]){ showHistory(yk); }
+    } else {
+      /* 收盘后 */
+      if(!data[t]){
+        /* 未打卡 → 弹收盘提醒 */
+        $('remindMask').style.display='flex';
+      } else {
+        /* 已打卡 → 弹今日完整记录 */
+        showHistory(t);
+      }
+    }
+  })();
   /* 导出 Excel(CSV+BOM)：仅本机下载，绝不上传；可直接用 Excel 打开 */
   function csvCell(v){
     v=(v==null)?'':String(v);
