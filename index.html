@@ -188,9 +188,14 @@
   .disc-export:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(20,23,33,.10)}
   html.no-checkin .disc-bar,html.no-checkin .disc-panel{display:none!important}
   .disc-goal{font-size:11px;font-weight:700;color:var(--accent);margin-left:5px;letter-spacing:0}
-  .cc-yesterday{margin:10px 2px 2px;padding:10px 12px;background:#f3f6fb;border-left:3px solid var(--accent);border-radius:9px;font-size:13px;color:#3a4658;line-height:1.5}
+  .cc-yesterday{margin:0 0 14px;padding:14px 16px;background:linear-gradient(135deg,#eef3fc,#f5f8ff);border-left:4px solid var(--accent);border-radius:12px;font-size:14px;color:#2a3a5a;line-height:1.65;box-shadow:0 2px 10px rgba(26,158,92,.08)}
+  .cc-yesterday .cc-yl-title{font-size:11px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+  .cc-yesterday .cc-yl-plan{font-weight:600;color:#1d1d1f}
+  .cc-yesterday .cc-yl-none{color:#8a90a0;font-style:italic}
   .cc-refl{margin:10px 2px 2px;padding:8px 12px 12px;background:#fbfaf2;border-left:3px solid #c9a227;border-radius:9px;font-size:13px;color:#3a4658;line-height:1.5}
   .cc-refl .cc-q{margin:10px 0 9px}
+  .cc-summary-box{margin:10px 2px 2px;padding:10px 12px 12px;background:#f6fbfa;border-left:3px solid #1f9e83;border-radius:9px;font-size:13px;color:#3a4658;line-height:1.5}
+  .cc-summary-box .cc-q{margin:0 0 8px}
   .cc-sep{height:1px;background:linear-gradient(90deg,transparent,#e3e7ee,transparent);margin:14px 0 4px}
   .cc-dev{margin:8px 2px 2px;padding:9px 12px;border-radius:9px;font-size:13px;line-height:1.5;border:1px solid transparent}
   .cc-dev .lbl{color:#7a8294;font-weight:600}
@@ -230,12 +235,25 @@
   .cc-row button:hover{border-color:var(--accent)}
   .cc-row button.sel{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
   .cc-row#ccExcited button.sel{background:#1f9e83;border-color:#1f9e83}
-  #ccNote{width:100%;min-height:84px;margin-top:4px;border:1px solid var(--line);border-radius:11px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;color:var(--ink)}
+  #ccNote,.ccNote{width:100%;min-height:84px;margin-top:4px;border:1px solid var(--line);border-radius:11px;padding:12px;font-size:14px;font-family:inherit;resize:vertical;color:var(--ink)}
   .cc-actions{display:flex;align-items:center;gap:14px;margin-top:22px}
   .cc-submit{background:var(--accent);color:#fff;border:none;border-radius:11px;padding:11px 26px;font-size:15px;font-weight:600;cursor:pointer;transition:opacity .2s}
   .cc-submit:disabled{opacity:.4;cursor:not-allowed}
   .cc-submit:not(:disabled):hover{box-shadow:0 8px 22px rgba(0,113,227,.28)}
   .cc-hint{font-size:12px;color:var(--sub)}
+  /* 历史记录弹窗（只读） */
+  .hist-mask{position:fixed;inset:0;background:rgba(15,17,23,.45);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:20001;padding:20px}
+  .hist-card{width:460px;max-width:100%;background:#fff;border-radius:20px;padding:24px;box-shadow:0 30px 80px rgba(0,0,0,.30);max-height:88vh;overflow:auto}
+  .hist-head{display:flex;align-items:center;font-size:17px;font-weight:700;margin-bottom:16px}
+  .hist-head .grey{font-size:13px;font-weight:500;margin-left:8px;color:var(--sub)}
+  .hist-close{margin-left:auto;background:none;border:none;font-size:18px;color:var(--sub);cursor:pointer}
+  .hist-section{margin:12px 0;padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.6}
+  .hist-section.state-empty{background:rgba(31,158,131,.08);border-left:3px solid #1f9e83}
+  .hist-section.state-open{background:rgba(255,159,10,.08);border-left:3px solid #ff9f0a}
+  .hist-section.state-heavy{background:rgba(255,69,58,.06);border-left:3px solid #ff453a}
+  .hist-section .hs-label{font-size:11px;font-weight:700;color:#8a90a0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .hist-section .hs-value{color:#1d1d1f;font-weight:500}
+  .hist-section .hs-sub{color:#5a6a7a;margin-top:4px;font-size:12px}
   @media(max-width:560px){.disc-strip{grid-template-columns:repeat(15,1fr)}}
 </style>
 </head>
@@ -1415,6 +1433,7 @@ function baseOpts(extra){
 <div class="checkin-mask" id="checkinMask" style="display:none">
   <div class="checkin-card">
     <div class="cc-head">今日打卡 <span class="grey" id="ccDate"></span><button class="cc-close" id="ccClose" type="button">✕</button></div>
+    <div class="cc-yesterday" id="ccYesterday" style="display:none"></div>
     <div class="cc-q">今天有让你兴奋的机会吗？<span class="req">*</span></div>
     <div class="cc-row" id="ccExcited">
       <button type="button" data-v="1">有</button><button type="button" data-v="0">无</button>
@@ -1431,7 +1450,6 @@ function baseOpts(extra){
       <div class="cc-q">开仓原因 &amp; 后续操作思路</div>
       <textarea id="ccNote" placeholder="如：持有科技票，等冲高回落砸掉空仓 / 一直持有"></textarea>
     </div>
-    <div class="cc-yesterday" id="ccYesterday" style="display:none"></div>
     <div class="cc-dev" id="ccDev" style="display:none"></div>
     <div class="cc-refl" id="ccRefl" style="display:none">
       <div class="cc-q">昨日计划执行反思<span class="req">*</span></div>
@@ -1446,8 +1464,10 @@ function baseOpts(extra){
       </div>
     </div>
     <div class="cc-sep"></div>
-    <div class="cc-q">今日盘面总结<span class="grey">（可选）</span></div>
-    <textarea id="ccSummary" class="ccNote" placeholder="今天赚钱效应如何？亏钱效应如何？板块情绪冷热？有没有让你兴奋的机会？"></textarea>
+    <div class="cc-summary-box">
+      <div class="cc-q">今日盘面总结<span class="grey">（可选）</span></div>
+      <textarea id="ccSummary" class="ccNote" placeholder="今天赚钱效应如何？亏钱效应如何？板块情绪冷热？有没有让你兴奋的机会？"></textarea>
+    </div>
     <div class="cc-sep"></div>
     <div class="cc-q">明日计划<span class="req">*</span></div>
     <div class="cc-row" id="ccPlanOpen">
@@ -1467,6 +1487,12 @@ function baseOpts(extra){
       <button class="cc-submit" id="ccSubmit" type="button" disabled>记录今日</button>
       <span class="cc-hint" id="ccHint">请先回答必答问题并选择状态</span>
     </div>
+  </div>
+</div>
+<div class="hist-mask" id="histMask" style="display:none">
+  <div class="hist-card">
+    <div class="hist-head">历史记录 <span class="grey" id="histDate"></span><button class="hist-close" id="histClose" type="button">✕</button></div>
+    <div id="histBody"></div>
   </div>
 </div>
 <script>
@@ -1554,7 +1580,7 @@ function baseOpts(extra){
         if(r && !off){ tip+=(r.state==='empty'?' · 空仓':(' · 开仓'+(r.size?' · '+r.size:'')+(r.excited?' · 兴奋':' · 无兴奋'))); }
         else if(!off && !r){ tip+=' · 未打卡'; }
         cell.title=tip;
-        if(!off) cell.style.cursor='pointer';
+        if(!off){ cell.style.cursor='pointer'; cell.addEventListener('click',function(){ showHistory(kc); }); }
         strip.appendChild(cell);
       }
     }
@@ -1592,10 +1618,13 @@ function baseOpts(extra){
     var yr=data[yk]; var yel=$('ccYesterday');
     var hasPlan=!!(yr&&yr.plan&&yr.plan.open!=null);
     if(hasPlan){
-      var pp=yr.plan; var txt='昨日计划（'+yk+'）：'+(pp.open?'明天开仓':'明天不开');
-      if(pp.open){ txt+=(pp.size?' · '+pp.size:''); if(pp.reason) txt+=' · 理由：'+pp.reason; }
-      if(pp.action) txt+=' · 操作：'+pp.action;
-      yel.textContent=txt; yel.style.display='block';
+      var pp=yr.plan;
+      var html='<div class="cc-yl-title">📋 昨日计划回显（'+yk+'）</div><div class="cc-yl-plan">';
+      html+=pp.open?'<b>明天开仓</b>':'<b>明天不开</b>';
+      if(pp.open){ if(pp.size) html+=' · 仓位 <b>'+pp.size+'</b>'; if(pp.reason) html+='<br>📌 理由：'+pp.reason; }
+      if(pp.action) html+='<br>⚙ 操作：'+pp.action;
+      html+='</div>';
+      yel.innerHTML=html; yel.style.display='block';
     } else { yel.style.display='none'; }
     var sel_refl=rec.refl||null;
     sel.reflResult=sel_refl&&sel_refl.result?sel_refl.result:null;
@@ -1695,6 +1724,52 @@ function baseOpts(extra){
   bindRow('ccPlanOpen','planOpen');
   bindRow('ccPlanSize','planSize');
   bindRow('ccReflResult','reflResult');
+  /* 历史记录查看：点击日历格子弹出只读弹窗 */
+  function showHistory(dateStr){
+    var r=data[dateStr];
+    if(!r){ alert(dateStr+' 暂无打卡记录'); return; }
+    $('histDate').textContent=dateStr;
+    var body='';
+    var stateClass=r.state==='empty'?'state-empty':(r.state==='open'?(r.size==='重仓'||r.size==='满仓'?'state-heavy':'state-open'):'');
+    body+='<div class="hist-section '+stateClass+'"><div class="hs-label">状态</div><div class="hs-value">'+(r.state==='empty'?'🟢 空仓':'🔴 开仓'+(r.size?' · '+r.size:''))+(r.excited?' · 兴奋':' · 无兴奋')+'</div></div>';
+    if(r.note){
+      body+='<div class="hist-section" style="background:#f8f9fb;border-left:3px solid #c5cdd8"><div class="hs-label">开仓原因 & 后续思路</div><div class="hs-value">'+r.note.replace(/\n/g,'<br>')+'</div></div>';
+    }
+    if(r.refl){
+      var reflMap={exec:'✅ 按计划执行',part:'⚠ 部分执行（偏差已记录）',none:'❌ 未执行'};
+      body+='<div class="hist-section" style="background:#fbfaf2;border-left:3px solid #c9a227"><div class="hs-label">昨日计划执行反思</div><div class="hs-value">'+(reflMap[r.refl.result]||r.refl.result)+'</div>';
+      if(r.refl.reason) body+='<div class="hs-sub">原因：'+r.refl.reason.replace(/\n/g,'<br>')+'</div>';
+      body+='</div>';
+    }
+    if(r.summary){
+      body+='<div class="hist-section" style="background:#f6fbfa;border-left:3px solid #1f9e83"><div class="hs-label">今日盘面总结</div><div class="hs-value">'+r.summary.replace(/\n/g,'<br>')+'</div></div>';
+    }
+    if(r.plan&&r.plan.open!=null){
+      body+='<div class="hist-section" style="background:#f0f4ff;border-left:3px solid var(--accent)"><div class="hs-label">明日计划</div><div class="hs-value">'+(r.plan.open?'明天开仓':'明天不开');
+      if(r.plan.open){ if(r.plan.size) body+=' · '+r.plan.size; }
+      if(r.plan.reason) body+='<br>📌 理由：'+r.plan.reason;
+      if(r.plan.action) body+='<br>⚙ 操作：'+r.plan.action;
+      body+='</div></div>';
+    }
+    var dp=dateStr.split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); var yk=ymd(yd);
+    var yr2=data[yk]; var plan2=yr2&&yr2.plan;
+    if(plan2&&plan2.open&&plan2.size&&(plan2.size in SIZE_PCT)){
+      var planPct=SIZE_PCT[plan2.size];
+      var actualPct=(r.state==='open'&&r.size&&(r.size in SIZE_PCT))?SIZE_PCT[r.size]:(r.state==='empty'?0:null);
+      if(actualPct!==null){
+        var diff=actualPct-planPct;
+        var devHtml='计划 '+plan2.size+'('+planPct+'%) → 实际 '+(r.state==='empty'?'空仓(0%)':r.size+'('+actualPct+'%)');
+        if(diff>0){ devHtml+=' <span style="color:#d93a3a;font-weight:700">超仓 +'+diff+'%</span>'+(diff>DEV_WARN?' ⚠️':'' ); }
+        else { devHtml+=' <span style="color:#1a9e5c;font-weight:700">未超仓 ✔</span>'; }
+        body+='<div class="hist-section" style="background:'+((diff>DEV_WARN)?'rgba(217,58,58,.06)':'#f8f9fb')+';border-left:3px solid '+(diff>DEV_WARN?'#d93a3a':'#c5cdd8')+'"><div class="hs-label">仓位偏差</div><div class="hs-value">'+devHtml+'</div></div>';
+      }
+    }
+    if(!body) body='<div class="hist-section" style="text-align:center;color:#8a90a0">该日期暂无详细记录</div>';
+    $('histBody').innerHTML=body;
+    $('histMask').style.display='flex';
+  }
+  $('histClose').addEventListener('click',function(){$('histMask').style.display='none';});
+  $('histMask').addEventListener('click',function(e){ if(e.target===$('histMask')) $('histMask').style.display='none'; });
   render();
   /* 每次刷新自动弹窗提醒：本地域名且当天尚未打卡时，自动打开打卡弹窗（内含昨日计划回显 + 写今日计划入口） */
   if(!data[today()] && !isOffDay(today())){ openModal(); }
