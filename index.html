@@ -229,6 +229,12 @@
   .disc-legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--sub);flex-wrap:wrap}
   .disc-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle}
   .disc-legend .empty{background:#1f9e83}.disc-legend .open{background:#ff9f0a}.disc-legend .heavy{background:#ff453a}.disc-legend .none{background:rgba(120,120,128,.3)}
+  .disc-cell{position:relative}
+  .disc-cell.delivery{box-shadow:0 0 0 2px rgba(255,149,0,.9) inset}
+  .deliverytag{position:absolute;top:1px;right:1px;background:#ff9500;color:#fff;font-size:9px;font-weight:700;line-height:1;padding:1px 3px;border-radius:3px}
+  .delivery-banner{display:none;margin:10px 0 14px;padding:10px 14px;background:linear-gradient(90deg,rgba(255,149,0,.14),rgba(255,149,0,.04));border:1px solid rgba(255,149,0,.5);border-left:3px solid #ff9500;border-radius:10px;font-size:13px;color:#b5650a;line-height:1.5}
+  .delivery-banner b{color:#ff7300}
+  .disc-legend i.delivery{background:#ff9500}
   /* modal */
   .checkin-mask{position:fixed;inset:0;background:rgba(15,17,23,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;z-index:20000;padding:20px}
   .checkin-card{width:440px;max-width:100%;background:#fff;border-radius:20px;padding:26px;box-shadow:0 30px 80px rgba(0,0,0,.28);max-height:92vh;overflow:auto}
@@ -308,6 +314,7 @@
         <div>连续持仓 <b id="discOpen2">0</b> 天</div>
         <div>本月交易日 <b id="discTradeDays">0</b> 天</div>
       </div>
+      <div class="delivery-banner" id="deliveryBanner" style="display:none"></div>
       <div class="disc-strip" id="discStrip"></div>
       <div class="disc-legend">
         <span><i class="empty"></i>空仓</span>
@@ -316,6 +323,7 @@
         <span><i class="none"></i>未打卡</span>
         <span><i class="off"></i>非交易日·周末/节假日</span>
         <span><i class="plan"></i>预案日·可写（不计入连续统计）</span>
+        <span><i class="delivery"></i>股指期货交割日</span>
       </div>
       <div class="note">每天点一次「今日打卡」：必答「今天有让我兴奋的机会吗」，再选空仓/开仓。开仓时记录仓位与思路。空仓日累计，帮你诚实看见「这个月我空了多少天」——这是防止 tilt 与马丁的保险丝。</div>
     </div>
@@ -1555,6 +1563,24 @@ function baseOpts(extra){
     if(HOLIDAYS_2026.has(kc)) return true;      // 法定休市
     return false;
   }
+  /* 股指期货/股指期权交割日（中金所规则：合约到期月第三个周五，遇法定假日顺延至下一交易日，现金交割）。
+     下列为 2026-2030 共 60 天（每月 1 天）。2026 的 2/24、6/22 已按官方通知顺延；
+     2029-02 顺延到 2/20 为基于春节 lunar 估算（2028-2030 官方放假安排尚未公布，届时若 State Council 微调补班，个别日期可能偏移 1-2 天，可更新此表）。 */
+  var DELIVERY_DAYS=new Set([
+    '2026-01-16','2026-02-24','2026-03-20','2026-04-17','2026-05-15','2026-06-22','2026-07-17','2026-08-21','2026-09-18','2026-10-16','2026-11-20','2026-12-18',
+    '2027-01-15','2027-02-19','2027-03-19','2027-04-16','2027-05-21','2027-06-18','2027-07-16','2027-08-20','2027-09-17','2027-10-15','2027-11-19','2027-12-17',
+    '2028-01-21','2028-02-18','2028-03-17','2028-04-21','2028-05-19','2028-06-16','2028-07-21','2028-08-18','2028-09-15','2028-10-20','2028-11-17','2028-12-15',
+    '2029-01-19','2029-02-20','2029-03-16','2029-04-20','2029-05-18','2029-06-15','2029-07-20','2029-08-17','2029-09-21','2029-10-19','2029-11-16','2029-12-21',
+    '2030-01-18','2030-02-15','2030-03-15','2030-04-19','2030-05-17','2030-06-21','2030-07-19','2030-08-16','2030-09-20','2030-10-18','2030-11-15','2030-12-20'
+  ]);
+  function isDeliveryDay(kc){ return DELIVERY_DAYS.has(kc); }
+  /* 当前自然周（周一~周日）是否含交割日，含则返回该日 kc，否则 null */
+  function deliveryThisWeek(){
+    var now=new Date(); var wd=now.getDay();
+    var mon=new Date(now); mon.setDate(now.getDate()-(wd===0?6:wd-1));
+    for(var i=0;i<7;i++){ var d=new Date(mon); d.setDate(mon.getDate()+i); if(DELIVERY_DAYS.has(ymd(d))) return ymd(d); }
+    return null;
+  }
   /* 预案日：周日 或 节假日最后一天 → 可写「下一交易日预案」，但【不计入】连续持仓/空仓 */
   function isPlanDay(kc){
     var dp=kc.split('-'); var wd=new Date(+dp[0],+dp[1]-1,+dp[2]).getDay();
@@ -1631,6 +1657,7 @@ function baseOpts(extra){
         cell.className='disc-cell';
         if(off && !plan){ cell.className+=' off'; }   // 完全休市（周六/假期中非最后一天）
         else if(plan){ cell.className+=' plan'; }      // 预案日（周日/假期最后一天）
+        if(isDeliveryDay(kc)){ cell.className+=' delivery'; } // 股指期货交割日
         var r=data[kc];
         if(r && plan){
           if(r.state==='open'){ cell.className+=' plan-open'; }
@@ -1643,7 +1670,9 @@ function baseOpts(extra){
         var lbl=document.createElement('span'); lbl.className='lbl'; lbl.textContent=c; cell.appendChild(lbl);
         if(off && !plan){ var ot=document.createElement('span'); ot.className='offtag'; ot.textContent=HOLIDAYS_2026.has(kc)?'假':'休'; cell.appendChild(ot); }
         else if(plan){ var pt=document.createElement('span'); pt.className='offtag plantag'; pt.textContent='预'; cell.appendChild(pt); }
+        else if(isDeliveryDay(kc)){ var dtg=document.createElement('span'); dtg.className='deliverytag'; dtg.textContent='交'; cell.appendChild(dtg); }
         var tip=kc+(off&&!plan?(HOLIDAYS_2026.has(kc)?' · 法定节假日休市':' · 周末休市'):(plan?' · 预案日（为下一交易日准备，不计入连续统计）':''));
+        if(isDeliveryDay(kc)) tip+=' · 股指期货交割日';
         if(r && plan){ tip+=(r.state==='empty'?' · 预案·空仓':(' · 预案·开仓'+(r.size?' · '+r.size:'')+(r.excited?' · 兴奋':' · 无兴奋'))); }
         else if(r && !off){ tip+=(r.state==='empty'?' · 空仓':(' · 开仓'+(r.size?' · '+r.size:'')+(r.excited?' · 兴奋':' · 无兴奋'))); }
         else if(!off && !r){ tip+=' · 未打卡'; }
@@ -1656,6 +1685,17 @@ function baseOpts(extra){
     var tradeDays=0;
     for(var k=1;k<=md;k++){ if(!isOffDay(ymd(new Date(y,m,k)))) tradeDays++; }
     if($('discTradeDays'))$('discTradeDays').textContent=tradeDays;
+    /* 交割周风险提示横幅 */
+    var dw=deliveryThisWeek();
+    var db=$('deliveryBanner');
+    if(db){
+      if(dw){
+        var dp=dw.split('-'); var dn=new Date(+dp[0],+dp[1]-1,+dp[2]);
+        var wn=['日','一','二','三','四','五','六'][dn.getDay()];
+        db.style.display='block';
+        db.innerHTML='⚠ <b>本周 '+dp[1]+'/'+dp[2]+'（周'+wn+'）为股指期货交割日</b> — 当周持仓宜偏保守，警惕尾盘期现收敛与波动放大';
+      } else { db.style.display='none'; }
+    }
     var btn=$('checkinBtn');
     if(btn){ btn.classList.toggle('done', !!data[t]); btn.textContent=data[t]?'今日已打卡 ✓':'今日打卡'; }
   }
