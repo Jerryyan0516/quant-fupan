@@ -214,11 +214,18 @@
   .disc-cell.today{outline:2px solid var(--accent);outline-offset:1px}
   .disc-cell.off{background:rgba(120,120,128,.04);cursor:default}
   .disc-cell.off:hover{transform:none}
+  .disc-cell.plan{background:rgba(0,113,227,.07);border:1px dashed rgba(0,113,227,.55)}
+  .disc-cell.plan:hover{transform:scale(1.08)}
+  .disc-cell.plan-empty{background:rgba(31,158,131,.18)}
+  .disc-cell.plan-open{background:rgba(255,159,10,.22)}
+  .disc-cell.plan .lbl{color:rgba(10,118,214,.85)}
+  .disc-cell .offtag.plantag{color:#0a76d6;font-weight:700}
   .disc-cell .lbl{position:absolute;top:2px;left:3px;font-size:9px;color:rgba(210,210,220,.50);line-height:1;pointer-events:none}
   .disc-cell.empty .lbl,.disc-cell.open .lbl,.disc-cell.heavy .lbl{color:rgba(255,255,255,.78)}
   .disc-cell.off .lbl{color:rgba(200,200,210,.28)}
   .disc-cell .offtag{position:absolute;bottom:2px;right:3px;font-size:9px;color:rgba(190,190,200,.55);pointer-events:none}
   .disc-legend i.off{background:rgba(120,120,128,.16)}
+  .disc-legend i.plan{background:rgba(0,113,227,.45);border:1px dashed rgba(0,113,227,.8)}
   .disc-legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--sub);flex-wrap:wrap}
   .disc-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle}
   .disc-legend .empty{background:#1f9e83}.disc-legend .open{background:#ff9f0a}.disc-legend .heavy{background:#ff453a}.disc-legend .none{background:rgba(120,120,128,.3)}
@@ -308,6 +315,7 @@
         <span><i class="heavy"></i>重仓/满仓</span>
         <span><i class="none"></i>未打卡</span>
         <span><i class="off"></i>非交易日·周末/节假日</span>
+        <span><i class="plan"></i>预案日·可写（不计入连续统计）</span>
       </div>
       <div class="note">每天点一次「今日打卡」：必答「今天有让我兴奋的机会吗」，再选空仓/开仓。开仓时记录仓位与思路。空仓日累计，帮你诚实看见「这个月我空了多少天」——这是防止 tilt 与马丁的保险丝。</div>
     </div>
@@ -1507,8 +1515,8 @@ function baseOpts(extra){
 <div class="remind-mask" id="remindMask" style="display:none">
   <div class="remind-card">
     <div class="remind-icon">📝</div>
-    <div class="remind-title">收盘了，该写今日复盘了</div>
-    <div class="remind-sub">花 30 秒记录今天的交易纪律：<br>状态 · 反思 · 总结 · 明日计划</div>
+    <div class="remind-title" id="remindTitle">收盘了，该写今日复盘了</div>
+    <div class="remind-sub" id="remindSub">花 30 秒记录今天的交易纪律：<br>状态 · 反思 · 总结 · 明日计划</div>
     <button class="remind-btn" id="remindGoBtn" type="button">去打卡 →</button>
     <button class="remind-skip" id="remindSkipBtn" type="button">稍后再说</button>
   </div>
@@ -1545,7 +1553,30 @@ function baseOpts(extra){
     if(HOLIDAYS_2026.has(kc)) return true;      // 法定休市
     return false;
   }
-  function yesterdayRec(){ var dp=today().split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); return data[ymd(yd)]; }
+  /* 预案日：周日 或 节假日最后一天 → 可写「下一交易日预案」，但【不计入】连续持仓/空仓 */
+  function isPlanDay(kc){
+    var dp=kc.split('-'); var wd=new Date(+dp[0],+dp[1]-1,+dp[2]).getDay();
+    if(wd===0) return true;                     // 周日
+    if(HOLIDAYS_2026.has(kc)){
+      var nd=new Date(+dp[0],+dp[1]-1,+dp[2]); nd.setDate(nd.getDate()+1);
+      if(!HOLIDAYS_2026.has(ymd(nd))) return true; // 节假日最后一天（次日不再休市）
+    }
+    return false;
+  }
+  function isCountDay(kc){ return !isOffDay(kc); } // 仅交易日计入连续统计
+  /* 回溯最近一个含「明日计划」的日期（用于弹窗昨日计划展示） */
+  function mostRecentPriorPlan(t){
+    var dp=t.split('-'); var d=new Date(+dp[0],+dp[1]-1,+dp[2]);
+    for(var i=1;i<=120;i++){ d.setDate(d.getDate()-1); var k=ymd(d); var r=data[k]; if(r&&r.plan&&r.plan.open!=null) return k; }
+    return null;
+  }
+  /* 回溯最近一个有任意记录(含预案日)的日期（用于<15:00自动展示） */
+  function mostRecentPriorRecord(t){
+    var dp=t.split('-'); var d=new Date(+dp[0],+dp[1]-1,+dp[2]);
+    for(var i=1;i<=120;i++){ d.setDate(d.getDate()-1); var k=ymd(d); if(data[k]) return k; }
+    return null;
+  }
+  function yesterdayRec(){ var pk=mostRecentPriorPlan(today()); return pk?data[pk]:null; }
   function $(id){return document.getElementById(id);}
   function render(){
     var now=new Date();
@@ -1555,19 +1586,24 @@ function baseOpts(extra){
     var emptyTotal=0, emptyStreak=0, openStreak=0;
     for(var i=0;i<md+1;i++){
       var d=new Date(y,m,now.getDate()-i);
-      var rec=data[ymd(d)];
+      var k2=ymd(d);
+      if(!isCountDay(k2)) continue;            // 跳过非交易日（不中断连胜）
+      var rec=data[k2];
       if(!rec) break;
       if(rec.state==='empty'){ emptyStreak++; } else { break; }
     }
     for(var j=0;j<md+1;j++){
-      var d2=new Date(y,m,now.getDate()-j);
-      var rec2=data[ymd(d2)];
+      var d3=new Date(y,m,now.getDate()-j);
+      var k3=ymd(d3);
+      if(!isCountDay(k3)) continue;            // 跳过非交易日
+      var rec2=data[k3];
       if(!rec2 || rec2.state!=='open') break;
       openStreak++;
     }
     for(var k=1;k<=md;k++){
       var dk=new Date(y,m,k);
-      if(data[ymd(dk)] && data[ymd(dk)].state==='empty') emptyTotal++;
+      var kk=ymd(dk);
+      if(isCountDay(kk) && data[kk] && data[kk].state==='empty') emptyTotal++;
     }
     $('discEmptyTotal').textContent=emptyTotal;
     $('discEmptyStreak').textContent=emptyStreak;
@@ -1583,22 +1619,29 @@ function baseOpts(extra){
         var dc=new Date(y,m,c);
         var kc=ymd(dc);
         var off=isOffDay(kc);
+        var plan=isPlanDay(kc);
         var cell=document.createElement('div');
         cell.className='disc-cell';
-        if(off){ cell.className+=' off'; }
+        if(off && !plan){ cell.className+=' off'; }   // 完全休市（周六/假期中非最后一天）
+        else if(plan){ cell.className+=' plan'; }      // 预案日（周日/假期最后一天）
         var r=data[kc];
-        if(r && !off){
+        if(r && plan){
+          if(r.state==='open'){ cell.className+=' plan-open'; }
+          else if(r.state==='empty'){ cell.className+=' plan-empty'; }
+        } else if(r && !off){
           if(r.state==='open'){ cell.className+=(r.size==='重仓'||r.size==='满仓')?' heavy':' open'; }
           else if(r.state==='empty'){ cell.className+=' empty'; }
         }
         if(kc===t) cell.className+=' today';
         var lbl=document.createElement('span'); lbl.className='lbl'; lbl.textContent=c; cell.appendChild(lbl);
-        if(off){ var ot=document.createElement('span'); ot.className='offtag'; ot.textContent=HOLIDAYS_2026.has(kc)?'假':'休'; cell.appendChild(ot); }
-        var tip=kc+(off?(HOLIDAYS_2026.has(kc)?' · 法定节假日休市':' · 周末休市'):'');
-        if(r && !off){ tip+=(r.state==='empty'?' · 空仓':(' · 开仓'+(r.size?' · '+r.size:'')+(r.excited?' · 兴奋':' · 无兴奋'))); }
+        if(off && !plan){ var ot=document.createElement('span'); ot.className='offtag'; ot.textContent=HOLIDAYS_2026.has(kc)?'假':'休'; cell.appendChild(ot); }
+        else if(plan){ var pt=document.createElement('span'); pt.className='offtag plantag'; pt.textContent='预'; cell.appendChild(pt); }
+        var tip=kc+(off&&!plan?(HOLIDAYS_2026.has(kc)?' · 法定节假日休市':' · 周末休市'):(plan?' · 预案日（为下一交易日准备，不计入连续统计）':''));
+        if(r && plan){ tip+=(r.state==='empty'?' · 预案·空仓':(' · 预案·开仓'+(r.size?' · '+r.size:'')+(r.excited?' · 兴奋':' · 无兴奋'))); }
+        else if(r && !off){ tip+=(r.state==='empty'?' · 空仓':(' · 开仓'+(r.size?' · '+r.size:'')+(r.excited?' · 兴奋':' · 无兴奋'))); }
         else if(!off && !r){ tip+=' · 未打卡'; }
         cell.title=tip;
-        if(!off){ cell.style.cursor='pointer'; cell.addEventListener('click',function(){ showHistory(kc); }); }
+        if(!off || plan){ cell.style.cursor='pointer'; cell.addEventListener('click',function(){ showHistory(kc); }); }
         strip.appendChild(cell);
       }
     }
@@ -1621,7 +1664,7 @@ function baseOpts(extra){
     sel={excited:rec.excited!=null?String(rec.excited):null,state:rec.state||null,size:rec.size||null,
          planOpen:p&&p.open!=null?String(p.open):null,planSize:p?p.size||null:null,
          planReason:p?p.reason||'':'',planAction:p?p.action||'':''};
-    $('ccDate').textContent=t;
+    $('ccDate').textContent=t+(isPlanDay(t)?' · 预案日':'');
     $('ccNote').value=rec.note||'';
     setSel('ccExcited',sel.excited);
     setSel('ccState',sel.state);
@@ -1632,12 +1675,12 @@ function baseOpts(extra){
     $('ccPlanReason').value=sel.planReason;
     $('ccPlanAction').value=sel.planAction;
     $('ccPlanFields').style.display=(sel.planOpen==='1')?'block':'none';
-    var dp=t.split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); var yk=ymd(yd);
+    var yk=mostRecentPriorPlan(t);   // 回溯最近一个有「明日计划」的日期（含预案日）
     var yr=data[yk]; var yel=$('ccYesterday');
     var hasPlan=!!(yr&&yr.plan&&yr.plan.open!=null);
     if(hasPlan){
       var pp=yr.plan;
-      var html='<div class="cc-yl-title">📋 昨日计划回显（'+yk+'）</div><div class="cc-yl-plan">';
+      var html='<div class="cc-yl-title">📋 昨日/预案计划回显（'+yk+(isPlanDay(yk)?'·预案日':'')+'）</div><div class="cc-yl-plan">';
       html+=pp.open?'<b>明天开仓</b>':'<b>明天不开</b>';
       if(pp.open){ if(pp.size) html+=' · 仓位 <b>'+pp.size+'</b>'; if(pp.reason) html+='<br>📌 理由：'+pp.reason; }
       if(pp.action) html+='<br>⚙ 操作：'+pp.action;
@@ -1666,7 +1709,7 @@ function baseOpts(extra){
     $('ccHint').textContent=sel.excited==null?'请先回答必答问题':(sel.state==null?'请选择今日状态':(needRefl&&!sel.reflResult?'请完成昨日计划执行反思':(sel.planOpen==null?'请决定明日计划（开/不开）':(sel.planOpen==='1'&&!sel.planSize?'请选择计划仓位':'点击记录'))));
   }
   function updateDev(){
-    var dp=today().split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); var yk=ymd(yd);
+    var yk=mostRecentPriorPlan(today());
     var yr=data[yk]; var dev=$('ccDev');
     var plan=yr&&yr.plan;
     if(!plan||!plan.open||!plan.size||!(plan.size in SIZE_PCT)){ dev.style.display='none'; return; }
@@ -1730,7 +1773,8 @@ function baseOpts(extra){
     render();
   }
   $('checkinBtn').addEventListener('click',function(){
-    if(isOffDay(today())){ alert('今日（'+today()+'）为非交易日（周末或法定节假日），无需打卡。'); return; }
+    var t=today();
+    if(isOffDay(t) && !isPlanDay(t)){ alert('今日（'+t+'）为非交易日（周末或法定节假日），无需打卡。'); return; }
     openModal();
   });
   $('ccClose').addEventListener('click',function(){$('checkinMask').style.display='none';});
@@ -1809,16 +1853,19 @@ function baseOpts(extra){
     var nowMin=h*60+m;
     var CUTOFF=15*60; /* 15:00 = 900 分钟 */
     var t=today();
-    if(isOffDay(t)) return; /* 非交易日不弹任何东西 */
+    if(isOffDay(t) && !isPlanDay(t)) return; /* 完全非交易日（周六/假期中非最后一天）不弹任何东西；预案日(周日/假期最后一天)照常 */
 
     if(nowMin < CUTOFF){
-      /* 盘前/盘中：弹昨日记录（让用户看到自己写的明日计划） */
-      var dp=t.split('-'); var yd=new Date(+dp[0],+dp[1]-1,+dp[2]); yd.setDate(yd.getDate()-1); var yk=ymd(yd);
-      if(data[yk]){ showHistory(yk); }
+      /* 盘前/盘中：弹最近一条记录（含预案日），让用户看到自己写的计划 */
+      var rk=mostRecentPriorRecord(t);
+      if(rk){ showHistory(rk); }
     } else {
       /* 收盘后 */
       if(!data[t]){
-        /* 未打卡 → 弹收盘提醒 */
+        /* 未打卡 → 弹提醒（收盘复盘 / 或写预案） */
+        var rt=$('remindTitle'), rs=$('remindSub');
+        if(isPlanDay(t)){ if(rt) rt.textContent='为下一交易日写个预案吧'; if(rs) rs.innerHTML='花 30 秒写下明天（下一交易日）的应对思路：<br>盘面总结 · 明日计划'; }
+        else { if(rt) rt.textContent='收盘了，该写今日复盘了'; if(rs) rs.innerHTML='花 30 秒记录今天的交易纪律：<br>状态 · 反思 · 总结 · 明日计划'; }
         $('remindMask').style.display='flex';
       } else {
         /* 已打卡 → 弹今日完整记录 */
