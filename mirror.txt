@@ -1485,20 +1485,22 @@ function baseOpts(extra){
       <div class="cc-q">今日盘面总结<span class="grey">（可选）</span></div>
       <textarea id="ccSummary" class="ccNote" placeholder="今天赚钱效应如何？亏钱效应如何？板块情绪冷热？有没有让你兴奋的机会？"></textarea>
     </div>
-    <div class="cc-sep"></div>
-    <div class="cc-q">明日计划<span class="req">*</span></div>
-    <div class="cc-row" id="ccPlanOpen">
-      <button type="button" data-v="1">明天开仓</button><button type="button" data-v="0">明天不开</button>
-    </div>
-    <div id="ccPlanFields" style="display:none">
-      <div class="cc-q">计划仓位</div>
-      <div class="cc-row" id="ccPlanSize">
-        <button type="button" data-v="轻仓">轻仓</button><button type="button" data-v="半仓">半仓</button><button type="button" data-v="重仓">重仓</button><button type="button" data-v="满仓">满仓</button>
+    <div id="ccPlanWrap">
+      <div class="cc-sep"></div>
+      <div class="cc-q">明日计划<span class="req">*</span></div>
+      <div class="cc-row" id="ccPlanOpen">
+        <button type="button" data-v="1">明天开仓</button><button type="button" data-v="0">明天不开</button>
       </div>
-      <div class="cc-q">开仓理由</div>
-      <textarea id="ccPlanReason" placeholder="为何明天该出手？只做让我兴奋的逻辑"></textarea>
-      <div class="cc-q">操作计划</div>
-      <textarea id="ccPlanAction" placeholder="如：冲高回落砸掉空仓 / 一直持有 / 破位止损"></textarea>
+      <div id="ccPlanFields" style="display:none">
+        <div class="cc-q">计划仓位</div>
+        <div class="cc-row" id="ccPlanSize">
+          <button type="button" data-v="轻仓">轻仓</button><button type="button" data-v="半仓">半仓</button><button type="button" data-v="重仓">重仓</button><button type="button" data-v="满仓">满仓</button>
+        </div>
+        <div class="cc-q">开仓理由</div>
+        <textarea id="ccPlanReason" placeholder="为何明天该出手？只做让我兴奋的逻辑"></textarea>
+        <div class="cc-q">操作计划</div>
+        <textarea id="ccPlanAction" placeholder="如：冲高回落砸掉空仓 / 一直持有 / 破位止损"></textarea>
+      </div>
     </div>
     <div class="cc-actions">
       <button class="cc-submit" id="ccSubmit" type="button" disabled>记录今日</button>
@@ -1564,6 +1566,11 @@ function baseOpts(extra){
     return false;
   }
   function isCountDay(kc){ return !isOffDay(kc); } // 仅交易日计入连续统计
+  /* 次日是否休市（用于判断今天是否还需写明日计划）：周五/节前最后交易日 → true */
+  function nextDayIsOff(kc){
+    var dp=kc.split('-'); var d=new Date(+dp[0],+dp[1]-1,+dp[2]); d.setDate(d.getDate()+1);
+    return isOffDay(ymd(d));
+  }
   /* 回溯最近一个含「明日计划」的日期（用于弹窗昨日计划展示） */
   function mostRecentPriorPlan(t){
     var dp=t.split('-'); var d=new Date(+dp[0],+dp[1]-1,+dp[2]);
@@ -1659,12 +1666,14 @@ function baseOpts(extra){
   }
   function openModal(){
     var t=today();
+    var hidePlan=(isCountDay(t)&&nextDayIsOff(t)); // 周五/节前最后交易日：明日休市，无需写明日计划
     var rec=data[t]||{};
     var p=rec.plan||null;
     sel={excited:rec.excited!=null?String(rec.excited):null,state:rec.state||null,size:rec.size||null,
          planOpen:p&&p.open!=null?String(p.open):null,planSize:p?p.size||null:null,
          planReason:p?p.reason||'':'',planAction:p?p.action||'':''};
-    $('ccDate').textContent=t+(isPlanDay(t)?' · 预案日':'');
+    var tag=isPlanDay(t)?' · 预案日':(hidePlan?' · 明日休市，仅需记录今日盘面':'');
+    $('ccDate').textContent=t+tag;
     $('ccNote').value=rec.note||'';
     setSel('ccExcited',sel.excited);
     setSel('ccState',sel.state);
@@ -1675,6 +1684,9 @@ function baseOpts(extra){
     $('ccPlanReason').value=sel.planReason;
     $('ccPlanAction').value=sel.planAction;
     $('ccPlanFields').style.display=(sel.planOpen==='1')?'block':'none';
+    if(hidePlan){ sel.planOpen=null; setSel('ccPlanOpen',null); $('ccPlanWrap').style.display='none'; }
+    else { $('ccPlanWrap').style.display='block'; }
+    sel.hidePlan=hidePlan;
     var yk=mostRecentPriorPlan(t);   // 回溯最近一个有「明日计划」的日期（含预案日）
     var yr=data[yk]; var yel=$('ccYesterday');
     var hasPlan=!!(yr&&yr.plan&&yr.plan.open!=null);
@@ -1702,11 +1714,18 @@ function baseOpts(extra){
   }
   function updateSubmit(){
     var yp=yesterdayRec(); var needRefl=!!(yp&&yp.plan&&yp.plan.open!=null);
-    var ok=sel.excited!=null && sel.state!=null && sel.planOpen!=null;
+    var ok=sel.excited!=null && sel.state!=null && (sel.hidePlan || sel.planOpen!=null);
     if(ok && needRefl && !sel.reflResult) ok=false;
-    if(ok && sel.planOpen==='1' && !sel.planSize) ok=false;
+    if(ok && !sel.hidePlan && sel.planOpen==='1' && !sel.planSize) ok=false;
     $('ccSubmit').disabled=!ok;
-    $('ccHint').textContent=sel.excited==null?'请先回答必答问题':(sel.state==null?'请选择今日状态':(needRefl&&!sel.reflResult?'请完成昨日计划执行反思':(sel.planOpen==null?'请决定明日计划（开/不开）':(sel.planOpen==='1'&&!sel.planSize?'请选择计划仓位':'点击记录'))));
+    var hint;
+    if(sel.excited==null) hint='请先回答必答问题';
+    else if(sel.state==null) hint='请选择今日状态';
+    else if(needRefl&&!sel.reflResult) hint='请完成昨日计划执行反思';
+    else if(!sel.hidePlan && sel.planOpen==null) hint='请决定明日计划（开/不开）';
+    else if(sel.planOpen==='1'&&!sel.planSize) hint='请选择计划仓位';
+    else hint='点击记录';
+    $('ccHint').textContent=hint;
   }
   function updateDev(){
     var yk=mostRecentPriorPlan(today());
@@ -1748,8 +1767,8 @@ function baseOpts(extra){
     });
   }
   function submit(){
-    if(sel.excited==null||sel.state==null||sel.planOpen==null) return;
-    if(sel.planOpen==='1'&&!sel.planSize) return;
+    if(sel.excited==null||sel.state==null||(!sel.hidePlan&&sel.planOpen==null)) return;
+    if(!sel.hidePlan && sel.planOpen==='1'&&!sel.planSize) return;
     var t=today();
     var rec={excited:sel.excited==='1',state:sel.state};
     if(sel.state==='open'){ rec.size=sel.size||null; rec.note=$('ccNote').value.trim(); }
@@ -1865,6 +1884,7 @@ function baseOpts(extra){
         /* 未打卡 → 弹提醒（收盘复盘 / 或写预案） */
         var rt=$('remindTitle'), rs=$('remindSub');
         if(isPlanDay(t)){ if(rt) rt.textContent='为下一交易日写个预案吧'; if(rs) rs.innerHTML='花 30 秒写下明天（下一交易日）的应对思路：<br>盘面总结 · 明日计划'; }
+        else if(isCountDay(t)&&nextDayIsOff(t)){ if(rt) rt.textContent='收盘了，记一下今日盘面'; if(rs) rs.innerHTML='花 30 秒记录今天的交易纪律：<br>状态 · 反思 · 总结<br><span class="grey">（明日为非交易日，无需写明日计划）</span>'; }
         else { if(rt) rt.textContent='收盘了，该写今日复盘了'; if(rs) rs.innerHTML='花 30 秒记录今天的交易纪律：<br>状态 · 反思 · 总结 · 明日计划'; }
         $('remindMask').style.display='flex';
       } else {
