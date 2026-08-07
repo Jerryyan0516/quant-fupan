@@ -523,6 +523,7 @@ html.public-mode .pos-banner{display:none!important}
       <a class="news-link" href="https://finance.sina.com.cn/7x24/" target="_blank" rel="noopener">新浪财经↗</a>
       <a class="news-link" href="https://m.yicai.com/brief/" target="_blank" rel="noopener">第一财经↗</a>
       <a class="news-link" href="https://www.jin10.com/" target="_blank" rel="noopener">金十数据↗</a>
+      <a class="news-link" href="https://24h.jrj.com.cn/newsFlash" target="_blank" rel="noopener">金融界↗</a>
     </div>
   </section>
 
