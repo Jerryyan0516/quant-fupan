@@ -499,6 +499,7 @@ html.public-mode .pos-banner{display:none!important}
         <button data-t="previous_zt">昨日涨停</button>
         <button data-t="daily_all_stocks">当日全部股票</button>
         <button data-t="concept_board_daily">概念板块</button>
+        <button data-t="emotion_daily">情绪分布图</button>
         <button id="dbReload" class="db-reload">⟳ 重新选择本地库</button>
       </div>
       <div class="db-status" id="dbStatus">未内嵌数据库（体积与隐私考虑）。点「⟳ 重新选择本地库」上传你的 stock_pools.db 即可浏览（数据不随 HTML 外传）。</div>
@@ -1158,7 +1159,9 @@ function baseOpts(extra){
     curTable=table;page=p;
     try{
       const c=db.exec('SELECT COUNT(*) FROM "'+table+'"')[0].values[0][0];total=c;
-      const res=db.exec('SELECT * FROM "'+table+'" LIMIT '+pageSize+' OFFSET '+(p*pageSize));
+      // 情绪分布图按日期倒序，第一页即最新交易日；其他表保持原顺序
+      const ord=(table==='emotion_daily')?' ORDER BY date DESC':'';
+      const res=db.exec('SELECT * FROM "'+table+'"'+ord+' LIMIT '+pageSize+' OFFSET '+(p*pageSize));
       if(!res.length){thead.innerHTML='';tbody.innerHTML='';setStatus('表 '+table+' 为空');return;}
       render(table,res[0].columns,res[0].values);
       setStatus('表 <b>'+table+'</b> ｜ 共 '+total+' 行，第 '+(p+1)+' 页');
@@ -1166,8 +1169,13 @@ function baseOpts(extra){
       pageInfo.textContent='第 '+(p+1)+' / '+Math.max(1,Math.ceil(total/pageSize))+' 页';
     }catch(e){setStatus('查询失败：'+e.message);}
   }
+  // 情绪分布图(emotion_daily) 字段为英文，做中文表头映射；其他表字段本就是中文，不受影响
+  const DBCOL={date:'日期',b4plus_10cm:'4板以上(10cm)',b3_10cm:'3板(10cm)',b2_10cm:'2板(10cm)',
+    zt_10cm:'涨停(10cm)',b3plus_20cm:'3板以上(20cm)',b2_20cm:'2板(20cm)',zt_20cm:'涨停(20cm)',
+    zt_total:'涨停总数',fall_gt7:'跌超7%家数',zb_count:'炸板家数',zb_rate:'炸板率%',
+    dt_count:'跌停家数',ztb_perf:'昨日涨停溢价%',lb_perf:'连板溢价%',lb_height:'最高连板'};
   function render(table,cols,vals){
-    thead.innerHTML='<tr>'+cols.map(c=>'<th>'+c+'</th>').join('')+'</tr>';
+    thead.innerHTML='<tr>'+cols.map(c=>'<th>'+(DBCOL[c]||c)+'</th>').join('')+'</tr>';
     tbody.innerHTML=vals.map(r=>'<tr>'+r.map((v,i)=>{
       let cls='';const cn=cols[i];
       if((cn==='涨跌幅'||cn==='次日涨跌幅'||cn==='next_chg')&&typeof v==='number')cls=v>=0?'red':'green';
