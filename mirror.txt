@@ -519,6 +519,7 @@ html.public-mode .pos-banner{display:none!important}
       <a class="news-link" href="https://wallstreetcn.com/live/global" target="_blank" rel="noopener">华尔街见闻↗</a>
       <a class="news-link" href="https://kuaixun.eastmoney.com/" target="_blank" rel="noopener">东方财富↗</a>
       <a class="news-link" href="https://news.10jqka.com.cn/realtimenews.html" target="_blank" rel="noopener">同花顺↗</a>
+      <a class="news-link" href="https://xueqiu.com/u/5124430882" target="_blank" rel="noopener">雪球↗</a>
     </div>
   </section>
 
