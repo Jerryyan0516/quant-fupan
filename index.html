@@ -97,8 +97,10 @@
   .pager{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px}
   .pager button{border:1px solid var(--line);background:#fff;padding:5px 12px;border-radius:8px;cursor:pointer}
   .pager button:disabled{opacity:.4;cursor:default}
-  .news-link{display:block;width:fit-content;margin-top:12px;padding:11px 20px;border:1px solid var(--accent);background:var(--accent);color:#fff;border-radius:11px;font-size:15px;text-decoration:none;font-weight:500;transition:opacity .15s}
-  .news-link:hover{opacity:.92}
+  .news-link{display:flex;align-items:center;justify-content:space-between;width:100%;margin-top:10px;padding:17px 20px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;font-size:17px;text-decoration:none;font-weight:600;letter-spacing:.3px;transition:border-color .15s,background .15s,box-shadow .15s}
+  .news-link::after{content:"↗";color:var(--accent);font-size:16px;font-weight:600;opacity:.7}
+  .news-link:hover{border-color:var(--accent);background:#f5faff;box-shadow:0 4px 16px rgba(0,113,227,.10)}
+  .news-link:hover::after{opacity:1}
   /* 子标签（板块题材内部：行业资金流 / 概念板块） */
   .sub-nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line)}
   .sub-nav button{background:none;border:none;padding:8px 18px;font-size:14px;color:var(--sub);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
@@ -513,16 +515,16 @@ html.public-mode .pos-banner{display:none!important}
   <!-- ===== 实时新闻源 ===== -->
   <section class="tab" id="tab-news">
     <div class="panel"><h2>实时新闻源</h2>
-      <div class="note">复盘.html 是本地单文件，无法实时内嵌财联社电报等动态新闻源（浏览器跨域 CORS 与站点 X-Frame-Options 限制，且无公开免费 API）。点击下方链接在新标签页打开实时新闻。</div>
-      <a class="news-link" href="https://cls.cn/telegraph" target="_blank" rel="noopener">财联社电报↗</a>
-      <a class="news-link" href="https://wallstreetcn.com/live/global" target="_blank" rel="noopener">华尔街见闻↗</a>
-      <a class="news-link" href="https://kuaixun.eastmoney.com/" target="_blank" rel="noopener">东方财富↗</a>
-      <a class="news-link" href="https://news.10jqka.com.cn/realtimenews.html" target="_blank" rel="noopener">同花顺↗</a>
-      <a class="news-link" href="https://xueqiu.com/u/5124430882" target="_blank" rel="noopener">雪球↗</a>
-      <a class="news-link" href="https://finance.sina.com.cn/7x24/" target="_blank" rel="noopener">新浪财经↗</a>
-      <a class="news-link" href="https://m.yicai.com/brief/" target="_blank" rel="noopener">第一财经↗</a>
-      <a class="news-link" href="https://www.jin10.com/" target="_blank" rel="noopener">金十数据↗</a>
-      <a class="news-link" href="https://24h.jrj.com.cn/newsFlash" target="_blank" rel="noopener">金融界↗</a>
+      <div class="note">点击任意一项，在新标签页打开。</div>
+      <a class="news-link" href="https://cls.cn/telegraph" target="_blank" rel="noopener">财联社电报</a>
+      <a class="news-link" href="https://wallstreetcn.com/live/global" target="_blank" rel="noopener">华尔街见闻</a>
+      <a class="news-link" href="https://kuaixun.eastmoney.com/" target="_blank" rel="noopener">东方财富</a>
+      <a class="news-link" href="https://news.10jqka.com.cn/realtimenews.html" target="_blank" rel="noopener">同花顺</a>
+      <a class="news-link" href="https://xueqiu.com/u/5124430882" target="_blank" rel="noopener">雪球</a>
+      <a class="news-link" href="https://finance.sina.com.cn/7x24/" target="_blank" rel="noopener">新浪财经</a>
+      <a class="news-link" href="https://m.yicai.com/brief/" target="_blank" rel="noopener">第一财经</a>
+      <a class="news-link" href="https://www.jin10.com/" target="_blank" rel="noopener">金十数据</a>
+      <a class="news-link" href="https://24h.jrj.com.cn/newsFlash" target="_blank" rel="noopener">金融界</a>
     </div>
   </section>
 
@@ -530,7 +532,7 @@ html.public-mode .pos-banner{display:none!important}
   <section class="tab" id="tab-lhb">
     <div class="panel"><h2>龙虎榜</h2>
       <div class="note">点击下方链接在新标签页打开通达信龙虎榜。</div>
-      <a class="news-link" href="http://page.tdx.com.cn:7615/site/kggx/tk_yzlhb_yz.html" target="_blank" rel="noopener">龙虎榜↗</a>
+      <a class="news-link" href="http://page.tdx.com.cn:7615/site/kggx/tk_yzlhb_yz.html" target="_blank" rel="noopener">龙虎榜</a>
     </div>
   </section>
 
