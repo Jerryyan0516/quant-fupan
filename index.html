@@ -1901,6 +1901,19 @@ function baseOpts(extra){
     <div class="cc-yesterday" id="ccYesterday" style="display:none"></div>
     <div id="ccTodaySections">
     <div class="cc-breaker" id="ccBreaker" style="display:none"></div>
+    <div style="font-weight:600;font-size:14px;color:#0f6e56;margin:16px 0 6px;padding-bottom:6px;border-bottom:1px solid #cdeade;">① 今日复盘 <span style="font-weight:400;font-size:12px;color:#5f8a7a">收盘后记录 · 只记录、不决策</span></div>
+    <div class="cc-refl" id="ccRefl" style="display:none">
+      <div class="cc-q">昨日计划执行反思<span class="req">*</span></div>
+      <div class="cc-row" id="ccReflResult">
+        <button type="button" data-v="exec">按计划执行 ✓</button>
+        <button type="button" data-v="part">部分执行（偏差已记录）</button>
+        <button type="button" data-v="none">未执行</button>
+      </div>
+      <div id="ccReflReasonBox" style="display:none">
+        <div class="cc-q">未执行原因</div>
+        <textarea id="ccReflReason" class="ccNote" placeholder="盘面没给信号？临时改主意？为什么没按计划来"></textarea>
+      </div>
+    </div>
     <div class="cc-q cc-core-q">今日市场状态<span class="req">*</span> <span class="grey">（判断今天有没有必要承担风险，不是预测）</span></div>
     <div class="cc-row" id="ccMarketState">
       <button type="button" data-v="A">A 极佳</button><button type="button" data-v="B">B 正常</button><button type="button" data-v="C">C 混沌</button><button type="button" data-v="D">D 亏钱效应</button><button type="button" data-v="E">E 极端风险</button>
@@ -1961,18 +1974,6 @@ function baseOpts(extra){
       </div>
     </div>
     <div class="cc-dev" id="ccDev" style="display:none"></div>
-    <div class="cc-refl" id="ccRefl" style="display:none">
-      <div class="cc-q">昨日计划执行反思<span class="req">*</span></div>
-      <div class="cc-row" id="ccReflResult">
-        <button type="button" data-v="exec">按计划执行 ✓</button>
-        <button type="button" data-v="part">部分执行（偏差已记录）</button>
-        <button type="button" data-v="none">未执行</button>
-      </div>
-      <div id="ccReflReasonBox" style="display:none">
-        <div class="cc-q">未执行原因</div>
-        <textarea id="ccReflReason" class="ccNote" placeholder="盘面没给信号？临时改主意？为什么没按计划来"></textarea>
-      </div>
-    </div>
     <div class="cc-sep"></div>
     <div class="cc-pnl-box">
       <div class="cc-q">今日账户盈亏 %<span class="grey">（真实账户当日涨跌幅，负=亏；用于熔断阈值判断）</span></div>
@@ -1990,7 +1991,9 @@ function baseOpts(extra){
       <div class="cc-q">潜在机会<span class="grey">（可选，记录观察到但暂不出手的方向）</span></div>
       <textarea id="ccOpportunities" class="ccNote" placeholder="如：云计算(周五高潮不追，调整后可关注) / 稀土·有色 / 创新药(哈药等复牌) / AI软件端(看不懂暂不碰)"></textarea>
     </div>
+    <div class="cc-actions"><button class="cc-submit" id="ccSaveReview" type="button" disabled>保存复盘</button><span class="cc-hint" id="ccHintReview">请先回答必答问题</span></div>
     </div>
+    <div style="font-weight:600;font-size:14px;color:#185fa5;margin:16px 0 6px;padding-bottom:6px;border-bottom:1px solid #cfe0f5;">② 明日计划 <span style="font-weight:400;font-size:12px;color:#5a7a9e">开盘前决策 · 事前承诺 + 自检</span></div>
     <div id="ccPlanWrap">
       <div class="cc-plan-hint" id="ccPlanHint" style="display:none">⚠ 明天是交易日，但你还未写明日交易计划。你知道明天买什么吗？</div>
       <div class="cc-sep"></div>
@@ -2021,10 +2024,7 @@ function baseOpts(extra){
         <div class="cc-q">操作计划</div>
         <textarea id="ccPlanAction" placeholder="如：冲高回落砸掉空仓 / 一直持有 / 破位止损"></textarea>
       </div>
-    </div>
-    <div class="cc-actions">
-      <button class="cc-submit" id="ccSubmit" type="button" disabled>记录今日</button>
-      <span class="cc-hint" id="ccHint">请先回答必答问题并选择状态</span>
+    <div class="cc-actions"><button class="cc-submit" id="ccSavePlan" type="button" disabled>保存计划</button><span class="cc-hint" id="ccHintPlan">请决定明日计划</span></div>
     </div>
   </div>
 </div>
@@ -2119,6 +2119,11 @@ function baseOpts(extra){
   /* 每日自省问卷：以「问题+点选」形式呈现，避免自我交代时遗漏；答案可在月底统计。
      注：「有无计划外交易」已废除——改由「交易性质」(计划内/计划外·符合模式/计划外·临时起意) 精确区分，
      计划外·符合模式不算违规，只有「临时起意」才计入违规。 */
+  /* 表单自省精简为「盘中情绪」一题：exec=昨日兑现(已置顶模块A)、pos=仓位对比(dev看板)、effect=市场状态(A~E)
+     均已由专门字段覆盖，重复提问已删。QUIZ 保留全量4题仅供渲染历史旧记录；新记录只写 mood。 */
+  var QUIZ_ASK=[
+    {id:'mood',q:'盘中情绪状态（最贴近）？',opts:[['calm','平静·按计划'],['anxious_ok','略焦虑但忍住'],['fomo','追涨上头'],['panic','恐慌砍仓'],['miss_ok','错过也不慌']]}
+  ];
   var QUIZ=[
     {id:'exec',q:'今日计划执行情况？',opts:[['full','完全按计划'],['part','基本按计划·小偏差'],['off','偏离计划'],['none','临时起意·没按'],['nop','今日无计划(空仓)']]},
     {id:'pos',q:'仓位纪律（实际 vs 计划）？',opts:[['ok','严格按计划'],['slightly_over','略超计划'],['over_heavy','明显过重·上头'],['too_light','明显偏轻·怕了'],['empty_ok','空仓按计划']]},
@@ -2403,8 +2408,12 @@ function baseOpts(extra){
     var btn=$('checkinBtn');
     if(btn){
       var wt=targetDate(); var isPast=(wt!==ymd(new Date()));
-      btn.classList.toggle('done', !!data[wt]);
-      btn.textContent = data[wt] ? (isPast? wt+' 已打卡 ✓':'今日已打卡 ✓') : (isPast? '写 '+wt+' 复盘':'今日打卡');
+      var r0=data[wt];
+      var needPlan = !!r0 && r0.state!=null && r0.plan==null && !isPlanDay(wt) && isCountDay(wt) && !nextDayIsOff(wt);
+      btn.classList.toggle('done', !!r0);
+      btn.textContent = r0
+        ? (needPlan ? (isPast?wt+' 复盘✓·待写计划':'复盘✓ · 待写计划') : (isPast? wt+' 已打卡 ✓':'今日已打卡 ✓'))
+        : (isPast? '写 '+wt+' 复盘':'今日打卡');
     }
     renderLastRecordStrip();
   }
@@ -2563,7 +2572,7 @@ function baseOpts(extra){
     $('ccOpportunities').value=rec.opportunities||'';
     sel.emptyReason=rec.emptyReason||null;
     setSel('ccEmptyReason',sel.emptyReason);
-    ['exec','pos','mood','effect'].forEach(function(q){ setQuizSel(q, sel.quiz[q]||null); });
+    QUIZ_ASK.forEach(function(q){ setQuizSel(q.id, sel.quiz[q.id]||null); });
     /* 预案日：当天无交易 → 隐藏"今日"相关全部板块，只留明日计划 */
     if(planOnly){
       sel.planOnly=true;
@@ -2576,42 +2585,43 @@ function baseOpts(extra){
     $('checkinMask').style.display='flex';
   }
   function updateSubmit(){
-    var yp=yesterdayRec(); var needRefl=!!(yp&&yp.plan&&yp.plan.open!=null);
-    var quizDone=['exec','pos','mood','effect'].every(function(q){ return !!sel.quiz[q]; });
-    var ok;
-    if(sel.planOnly){
-      /* 预案日：只需填写明日计划，不需要兴奋/状态/问卷/反思 */
-      ok=sel.planOpen!=null;
-      if(ok && sel.planOpen==='1' && (!sel.planSize || !$('ccPlanReason').value.trim())) ok=false;
-    } else {
-      ok=sel.excited!=null && sel.state!=null && sel.recover!=null && sel.marketState!=null && (sel.hidePlan || sel.planOpen!=null) && quizDone;
+    /* ===== 模块A · 保存复盘（只校验今日复盘字段，已与明日计划解绑） ===== */
+    (function(){
+      if(sel.planOnly) return;   // 预案日无今日复盘（模块A整块已隐藏）
+      var yp=yesterdayRec(); var needRefl=!!(yp&&yp.plan&&yp.plan.open!=null);
+      var quizDone=QUIZ_ASK.every(function(q){ return !!sel.quiz[q.id]; });
+      var ok=sel.excited!=null && sel.state!=null && sel.recover!=null && sel.marketState!=null && quizDone;
       if(ok && sel.state==='open' && (!sel.tradeType || !sel.pollution)) ok=false;
       if(ok && needRefl && !sel.reflResult) ok=false;
-      if(ok && !sel.hidePlan && sel.planOpen==='1' && !sel.planSize) ok=false;
-      if(ok && !sel.hidePlan && sel.planOpen==='1' && sel.planExcited==null) ok=false;
-      if(ok && !sel.hidePlan && sel.planOpen==='1' && !$('ccPlanReason').value.trim()) ok=false;
-    }
-    $('ccSubmit').disabled=!ok;
-    var hint;
-    if(sel.planOnly){
+      $('ccSaveReview').disabled=!ok;
+      var hint;
+      if(sel.excited==null) hint='请先回答必答问题';
+      else if(sel.marketState==null) hint='请判断今日市场状态（A~E）';
+      else if(sel.recover==null) hint='请回答回本心态自检';
+      else if(sel.state==null) hint='请选择今日状态';
+      else if(sel.state==='open' && !sel.tradeType) hint='请选择交易性质（计划内/符合模式/临时起意）';
+      else if(sel.state==='open' && !sel.pollution) hint='请做污染检测（这笔交易的来源）';
+      else if(!quizDone) hint='请完成自省（盘中情绪）';
+      else if(needRefl&&!sel.reflResult) hint='请完成昨日计划兑现';
+      else hint='保存复盘';
+      $('ccHintReview').textContent=hint;
+    })();
+    /* ===== 模块B · 保存计划（只校验明日计划字段） ===== */
+    (function(){
+      if(sel.hidePlan) return;    // 明日休市（模块B整块已隐藏）
+      var ok=sel.planOpen!=null;
+      if(ok && sel.planOpen==='1' && !sel.planSize) ok=false;
+      if(ok && sel.planOpen==='1' && sel.planExcited==null) ok=false;
+      if(ok && sel.planOpen==='1' && !$('ccPlanReason').value.trim()) ok=false;
+      $('ccSavePlan').disabled=!ok;
+      var hint;
       if(sel.planOpen==null) hint='请决定明日计划（新机会：有/没有）';
+      else if(sel.planOpen==='1'&&sel.planExcited==null) hint='请回答对计划标的的兴奋信号';
       else if(sel.planOpen==='1'&&!sel.planSize) hint='请选择计划仓位';
       else if(sel.planOpen==='1'&&!$('ccPlanReason').value.trim()) hint='请填写开仓理由（例外项，必填）';
-      else hint='记录预案';
-    } else if(sel.excited==null) hint='请先回答必答问题';
-    else if(sel.marketState==null) hint='请判断今日市场状态（A~E）';
-    else if(sel.recover==null) hint='请回答回本心态自检';
-    else if(sel.state==null) hint='请选择今日状态';
-    else if(sel.state==='open' && !sel.tradeType) hint='请选择交易性质（计划内/符合模式/临时起意）';
-    else if(sel.state==='open' && !sel.pollution) hint='请做污染检测（这笔交易的来源）';
-    else if(!quizDone) hint='请完成每日自省问卷（4题）';
-    else if(needRefl&&!sel.reflResult) hint='请完成昨日计划执行反思';
-    else if(!sel.hidePlan && sel.planOpen==null) hint='请决定明日计划（新机会：有/没有）';
-    else if(sel.planOpen==='1'&&sel.planExcited==null) hint='请回答对计划标的的兴奋信号';
-    else if(sel.planOpen==='1'&&!sel.planSize) hint='请选择计划仓位';
-    else if(sel.planOpen==='1'&&!$('ccPlanReason').value.trim()) hint='请填写开仓理由（例外项，必填）';
-    else hint='点击记录';
-    $('ccHint').textContent=hint;
+      else hint='保存计划';
+      $('ccHintPlan').textContent=hint;
+    })();
   }
   function updateDev(){
     var yk=mostRecentPriorPlan(today());
@@ -2707,7 +2717,7 @@ function baseOpts(extra){
     var wrap=$('ccQuizWrap'); if(!wrap) return;
     var nums=['①','②','③','④'];
     var html='<div class="cc-qz-title">每日自省问卷 <span class="grey">（点选，帮你不漏想）</span></div>';
-    QUIZ.forEach(function(item,idx){
+    QUIZ_ASK.forEach(function(item,idx){
       html+='<div class="cc-qz-q"><div class="cc-q">'+nums[idx]+' '+item.q+'</div><div class="cc-row cc-qz-row" data-q="'+item.id+'">';
       item.opts.forEach(function(o){ html+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
       html+='</div></div>';
@@ -2729,31 +2739,23 @@ function baseOpts(extra){
     var cf=$('tiltConfirm'); if(cf) cf.disabled=true;
     $('tiltMask').style.display='flex';
   }
-  function submit(){
-    if(sel.planOnly){
-      /* 预案日：只保存计划，不修改 exciting/state/quiz */
-      if(sel.planOpen==null) return;
-      if(sel.planOpen==='1'&&(!sel.planSize||!$('ccPlanReason').value.trim())) return;
-    } else {
-      if(sel.excited==null||sel.state==null||sel.marketState==null||(!sel.hidePlan&&sel.planOpen==null)) return;
-      if(sel.state==='open' && (!sel.tradeType||!sel.pollution)) return;
-      if(!sel.hidePlan && sel.planOpen==='1'&&(!sel.planSize||!$('ccPlanReason').value.trim())) return;
-      /* 第三道门硬拦截（已迁至计划阶段）：计划开仓却对标的无兴奋信号 */
-      if(sel.planOpen==='1' && sel.planExcited==='0' && !tiltAck){ showTiltGate(); return; }
-      tiltAck=false;
-    }
-    var t=targetDate();
-    var rec;
-    if(sel.planOnly){
-      /* 预案日：保留已有的 excited/state/quiz，只更新计划 */
-      rec=data[t]||{};
-    } else {
-      rec={excited:sel.excited==='1',state:sel.state,recover:sel.recover||null,marketState:sel.marketState||null,result:sel.result||null};
-      if(sel.state==='open'){ rec.size=sel.size||null; rec.note=$('ccNote').value.trim(); rec.tradeType=sel.tradeType||null; rec.pollution=sel.pollution||null; rec.checklist=sel.checklist||[]; rec.accidents=sel.accidents||[]; }
-      else { rec.size=null; rec.note=''; rec.emptyReason=sel.emptyReason||null; rec.tradeType=null; rec.pollution=null; rec.checklist=[]; rec.accidents=[]; }
-    }
-    if(!sel.planOnly){
+  /* 模块A：保存「今日复盘」——只写今日字段，merge 保留同日期已有的明日计划（两块互不覆盖） */
+  function saveReview(){
+    if(sel.planOnly) return;   // 预案日无今日复盘
+    if(sel.excited==null||sel.state==null||sel.marketState==null||sel.recover==null) return;
+    if(sel.state==='open' && (!sel.tradeType||!sel.pollution)) return;
     var yp=yesterdayRec();
+    if(yp&&yp.plan&&yp.plan.open!=null && !sel.reflResult) return;
+    if(!QUIZ_ASK.every(function(q){ return !!sel.quiz[q.id]; })) return;
+    var t=targetDate();
+    var rec=Object.assign({}, data[t]||{});   // 关键：保留已有 plan，只覆盖今日字段
+    rec.excited=sel.excited==='1';
+    rec.state=sel.state;
+    rec.recover=sel.recover||null;
+    rec.marketState=sel.marketState||null;
+    rec.result=sel.result||null;
+    if(sel.state==='open'){ rec.size=sel.size||null; rec.note=$('ccNote').value.trim(); rec.tradeType=sel.tradeType||null; rec.pollution=sel.pollution||null; rec.checklist=sel.checklist||[]; rec.accidents=sel.accidents||[]; rec.emptyReason=null; }
+    else { rec.size=null; rec.note=''; rec.emptyReason=sel.emptyReason||null; rec.tradeType=null; rec.pollution=null; rec.checklist=[]; rec.accidents=[]; }
     if(yp&&yp.plan&&yp.plan.open!=null){
       var refl={result:sel.reflResult};
       if(sel.reflResult==='none') refl.reason=$('ccReflReason').value.trim();
@@ -2762,11 +2764,28 @@ function baseOpts(extra){
     rec.summary=$('ccSummary').value.trim();
     rec.opportunities=$('ccOpportunities').value.trim();
     rec.quiz=sel.quiz;
-    }
     /* 周期日记：把当日环境温度快照存进记录。
        目的不是给建议，而是事后能回答：冰点那几天我真的兴奋了吗？高潮那几天我真的收手了吗？ */
-    if(!sel.planOnly && typeof POS!=='undefined' && POS && POS.temp!=null){
-      rec.env={t:POS.temp,p:POS.phase5,c:POS.pct_cold,d:POS.delta};
+    if(typeof POS!=='undefined' && POS && POS.temp!=null){ rec.env={t:POS.temp,p:POS.phase5,c:POS.pct_cold,d:POS.delta}; }
+    var _pnl=$('ccPnl').value.trim();
+    rec.pnl=(_pnl===''||isNaN(parseFloat(_pnl)))?null:parseFloat(_pnl);
+    data[t]=rec; save(data); ciSync(t,rec); render();
+    var _b=$('ccSaveReview'); if(_b){ var _ot=_b.textContent; _b.textContent='✓ 已保存'; _b.disabled=true; setTimeout(function(){ _b.textContent=_ot; updateSubmit(); },1200); }
+  }
+  /* 模块B：保存「明日计划」——只写 plan，merge 保留同日期已有的今日复盘字段 */
+  function savePlan(){
+    var t=targetDate();
+    var rec=Object.assign({}, data[t]||{});   // 关键：保留今日复盘字段，只覆盖 plan
+    if(sel.planOnly){
+      if(sel.planOpen==null) return;
+      if(sel.planOpen==='1'&&(!sel.planSize||!$('ccPlanReason').value.trim())) return;
+    } else {
+      if(sel.hidePlan) return;   // 明日休市，无计划可存
+      if(sel.planOpen==null) return;
+      /* 第三道门硬拦截：计划开仓却对标的无兴奋信号 */
+      if(sel.planOpen==='1' && sel.planExcited==='0' && !tiltAck){ showTiltGate(); return; }
+      tiltAck=false;
+      if(sel.planOpen==='1'&&(!sel.planSize||!$('ccPlanReason').value.trim())) return;
     }
     var plan=null;
     if(sel.planOpen!=null){
@@ -2776,13 +2795,8 @@ function baseOpts(extra){
       if(sel.planHold&&sel.planHold!=='none') plan.holdNote=$('ccPlanHoldNote').value.trim()||'';
     }
     rec.plan=plan;
-    var _pnl=$('ccPnl').value.trim();
-    rec.pnl=(_pnl===''||isNaN(parseFloat(_pnl)))?null:parseFloat(_pnl);
-    data[t]=rec;
-    save(data);
-    ciSync(t,rec);
-    $('checkinMask').style.display='none';
-    render();
+    data[t]=rec; save(data); ciSync(t,rec); render();
+    var _b2=$('ccSavePlan'); if(_b2){ var _ot2=_b2.textContent; _b2.textContent='✓ 已保存'; _b2.disabled=true; setTimeout(function(){ _b2.textContent=_ot2; updateSubmit(); },1200); }
   }
   $('checkinBtn').addEventListener('click',function(){
     var t=targetDate();
@@ -2791,10 +2805,11 @@ function baseOpts(extra){
   });
   $('ccClose').addEventListener('click',function(){$('checkinMask').style.display='none';});
   $('checkinMask').addEventListener('click',function(e){ if(e.target===$('checkinMask')) $('checkinMask').style.display='none'; });
-  $('ccSubmit').addEventListener('click',submit);
+  $('ccSaveReview').addEventListener('click',saveReview);
+  $('ccSavePlan').addEventListener('click',savePlan);
   $('tiltAck').addEventListener('change',function(){ $('tiltConfirm').disabled=!this.checked; });
   $('tiltCancel').addEventListener('click',function(){ $('tiltMask').style.display='none'; });
-  $('tiltConfirm').addEventListener('click',function(){ $('tiltMask').style.display='none'; tiltAck=true; });
+  $('tiltConfirm').addEventListener('click',function(){ $('tiltMask').style.display='none'; tiltAck=true; if(typeof savePlan==='function') savePlan(); });
   $('tiltMask').addEventListener('click',function(e){ if(e.target===$('tiltMask')){ $('tiltMask').style.display='none'; } });
   buildQuiz();
   bindRow('ccExcited','excited');
@@ -2813,6 +2828,8 @@ function baseOpts(extra){
   bindRow('ccResult','result');
   bindMultiRow('ccChecklist','checklist');
   bindMultiRow('ccAccident','accidents');
+  /* 文本域输入也刷新按钮可用态（开仓理由为必填，纯点选无法触发） */
+  ['ccPlanReason'].forEach(function(id){ var el=$(id); if(el) el.addEventListener('input', updateSubmit); });
   /* 恢复期开关：持久化 + 联动刷新 */
   var rt=$('recoverToggle');
   if(rt){
@@ -2885,9 +2902,9 @@ function baseOpts(extra){
     if(r.quiz){
       var qz='<div class="hist-section" style="background:#fbf7ff;border-left:3px solid #7b5cff"><div class="hs-label">每日自省问卷</div><div class="hs-value">';
       QUIZ.forEach(function(item){
-        var v=r.quiz[item.id]; var lbl='未填';
-        if(v){ for(var i=0;i<item.opts.length;i++){ if(item.opts[i][0]===v){ lbl=item.opts[i][1]; break; } } }
-        qz+=item.q+' <b>'+(v?lbl:'未填')+'</b><br>';
+        var v=r.quiz[item.id]; if(!v) return;   // 只渲染答过的题（新记录仅 mood，旧记录照显）
+        var lbl=v; for(var i=0;i<item.opts.length;i++){ if(item.opts[i][0]===v){ lbl=item.opts[i][1]; break; } }
+        qz+=item.q+' <b>'+lbl+'</b><br>';
       });
       qz+='</div></div>';
       body+=qz;
