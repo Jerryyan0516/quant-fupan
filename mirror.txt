@@ -1588,7 +1588,10 @@ function baseOpts(extra){
   }
 
   // ---- 日期筛选器（自定义下拉，向下展开）----
-  (function(){
+  /* 2026-11-18：改为具名函数。原来是立即执行的 IIFE，数据懒加载还没到位时
+     `if(!ZT.dates...) return` 直接退出，之后数据到了也没人重填 ——
+     用户看到的就是「日期：—」的空下拉。 */
+  function initZtDateMenu(){
     const wrap=document.getElementById('ztDateWrap'), btn=document.getElementById('ztDateBtn'),
           menu=document.getElementById('ztDateMenu'), label=document.getElementById('ztDateLabel');
     if(!btn||!menu||!ZT.dates||!ZT.dates.length) return;
@@ -1609,7 +1612,8 @@ function baseOpts(extra){
       menu.style.display=open?'none':'block';
       if(wrap) wrap.classList.toggle('open',!open);
     };
-  })();
+  }
+  initZtDateMenu();
   // ---- 10cm / 20cm 筛选器（自定义下拉）----
   let __ztCmVal = 'all';
   (function(){
@@ -1754,6 +1758,7 @@ function baseOpts(extra){
   window.__registerTab('lb', ()=>{
     __ztSyncDate();
     syncZtDate();
+    initZtDateMenu();
     try{ fillZtIndustries(); }catch(e){}
     renderTierCards();
     renderZtPool();
