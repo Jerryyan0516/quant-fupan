@@ -1110,15 +1110,29 @@ window.__ensureData = function(names){
   const label = list.map(function(n){ return window.__LD_LABELS[n] || n; }).join('、');
   window.__ldToast('正在加载「' + label + '」数据…');
   const done = function(){ window.__ldToast(''); };
-  return Promise.all(list.map(function(n){
-    if(window.__LD_PENDING[n]) return window.__LD_PENDING[n];
-    window.__LD_PENDING[n] = new Promise(function(res, rej){
+  /* 单块失败自动重试 2 次：分片有 2~5MB，弱网下偶发超时很常见，
+     直接放弃会让 tab 永远空白（2026-11-18 用户反馈「点了没反应」）。 */
+  const loadOne = function(n, attempt){
+    attempt = attempt || 0;
+    return new Promise(function(res, rej){
       const s = document.createElement('script');
-      s.src = window.__DATA_BASE + n + '.js';
+      s.src = window.__DATA_BASE + n + '.js' + (attempt ? ('?r=' + attempt + Date.now()) : '');
       s.onload = function(){ window.__LD_LOADED[n] = true; res(); };
-      s.onerror = function(){ rej(new Error('数据加载失败：' + n + '（网络或 CDN 不可达，可刷新重试）')); };
+      s.onerror = function(){
+        s.remove();
+        if(attempt < 2){
+          window.__ldToast('「' + (window.__LD_LABELS[n]||n) + '」加载失败，正在重试（' + (attempt+1) + '/2）…');
+          setTimeout(function(){ loadOne(n, attempt+1).then(res, rej); }, 1200 * (attempt+1));
+        } else {
+          rej(new Error('数据加载失败：' + n + '（网络或 CDN 不可达，可刷新重试）'));
+        }
+      };
       document.head.appendChild(s);
     });
+  };
+  return Promise.all(list.map(function(n){
+    if(window.__LD_PENDING[n]) return window.__LD_PENDING[n];
+    window.__LD_PENDING[n] = loadOne(n, 0);
     return window.__LD_PENDING[n];
   })).then(function(v){ done(); return v; }, function(e){ done(); throw e; });
 };
