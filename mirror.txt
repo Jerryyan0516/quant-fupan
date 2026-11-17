@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>复盘 · A股打板情绪</title>
 <!-- Chart.js 改为按需懒加载（见 ensureChart），不再阻塞首屏解析 -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<!-- 2026-11-18：原 cdnjs 的 sql.js 在这里同步加载，国内实测该域名不可达（TLS 连接失败），
+     会让整个页面白屏阻塞十几秒。改为「数据库表」tab 用到时再动态加载，且优先走 jsDelivr。 -->
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script> -->
 <script>
 /* 纪律打卡仅本地：线上/镜像域名隐藏打卡 UI（数据本就只存本机 localStorage，绝不上传） */
 /* ===== 大数据块懒加载 core（2026-11-17）=====
@@ -863,11 +865,23 @@ function ensureChart(){
   if(window.Chart) return Promise.resolve(window.Chart);
   if(__chartP) return __chartP;
   __chartP=new Promise((res,rej)=>{
-    const s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js';
-    s.onload=()=>res(window.Chart);
-    s.onerror=()=>rej(new Error('Chart.js 加载失败，请检查网络'));
-    document.head.appendChild(s);
+    /* 2026-11-18：多源兜底（jsDelivr 优先；cdnjs / unpkg 备用），
+       避免单一 CDN 抖动导致所有曲线空白。 */
+    const srcs=[
+      'https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.3/chart.umd.min.js',
+      'https://unpkg.com/chart.js@4.4.3/dist/chart.umd.min.js'
+    ];
+    let i=0;
+    const tryNext=()=>{
+      if(i>=srcs.length){ rej(new Error('Chart.js 加载失败（所有 CDN 均不可达）')); return; }
+      const s=document.createElement('script');
+      s.src=srcs[i++];
+      s.onload=()=>res(window.Chart);
+      s.onerror=()=>{ s.remove(); tryNext(); };
+      document.head.appendChild(s);
+    };
+    tryNext();
   });
   return __chartP;
 }
@@ -878,11 +892,23 @@ function ensureKline() {
   if (window.LightweightCharts) return Promise.resolve(window.LightweightCharts);
   if (__klP) return __klP;
   __klP = new Promise((res, rej) => {
-    const s = document.createElement('script');
-    s.src = 'https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js';
-    s.onload = () => res(window.LightweightCharts);
-    s.onerror = () => rej(new Error('K线库加载失败（可能离线）'));
-    document.head.appendChild(s);
+    /* 2026-11-18：unpkg.com 在国内实测完全不可达（连接超时），K 线会永远转圈。
+       改为多源依次尝试，jsDelivr 优先。 */
+    const srcs = [
+      'https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/lightweight-charts/4.1.3/lightweight-charts.standalone.production.js',
+      'https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js'
+    ];
+    let i = 0;
+    const tryNext = () => {
+      if (i >= srcs.length) { rej(new Error('K线库加载失败（所有 CDN 均不可达）')); return; }
+      const s = document.createElement('script');
+      s.src = srcs[i++];
+      s.onload = () => res(window.LightweightCharts);
+      s.onerror = () => { s.remove(); tryNext(); };
+      document.head.appendChild(s);
+    };
+    tryNext();
   });
   return __klP;
 }
@@ -1060,21 +1086,41 @@ window.__LD = function(name){
   if(!window.__LD_STORE[name]) window.__LD_STORE[name] = {};
   return window.__LD_STORE[name];
 };
+/* 数据块中文名 + 顶部轻提示：分片有 4~6MB，弱网要等几秒，
+   没有反馈用户会以为页面坏了（2026-11-18 用户反馈「点了没反应」）。 */
+window.__LD_LABELS = {DATA:'连板晋级', ZT:'涨停池', C:'概念板块', KLINE:'K线', RANK:'选股排序', RANK_KLINE:'选股K线'};
+window.__ldToast = function(msg){
+  let el = document.getElementById('__ldToast');
+  if(!el){
+    el = document.createElement('div');
+    el.id = '__ldToast';
+    el.style.cssText = 'position:fixed;left:50%;top:14px;transform:translateX(-50%);z-index:99999;'
+      + 'background:rgba(20,22,28,.92);color:#fff;font-size:13px;padding:9px 18px;border-radius:999px;'
+      + 'box-shadow:0 6px 24px rgba(0,0,0,.28);pointer-events:none;transition:opacity .2s;white-space:nowrap';
+    el.style.display = 'none';
+    (document.body || document.documentElement).appendChild(el);
+  }
+  el.textContent = msg || '';
+  el.style.display = msg ? 'block' : 'none';
+};
 window.__ensureData = function(names){
   names = names || [];
   const list = names.filter(function(n){ return !window.__LD_LOADED[n]; });
   if(!list.length) return Promise.resolve();
+  const label = list.map(function(n){ return window.__LD_LABELS[n] || n; }).join('、');
+  window.__ldToast('正在加载「' + label + '」数据…');
+  const done = function(){ window.__ldToast(''); };
   return Promise.all(list.map(function(n){
     if(window.__LD_PENDING[n]) return window.__LD_PENDING[n];
     window.__LD_PENDING[n] = new Promise(function(res, rej){
       const s = document.createElement('script');
       s.src = window.__DATA_BASE + n + '.js';
       s.onload = function(){ window.__LD_LOADED[n] = true; res(); };
-      s.onerror = function(){ rej(new Error('数据加载失败：' + n)); };
+      s.onerror = function(){ rej(new Error('数据加载失败：' + n + '（网络或 CDN 不可达，可刷新重试）')); };
       document.head.appendChild(s);
     });
     return window.__LD_PENDING[n];
-  }));
+  })).then(function(v){ done(); return v; }, function(e){ done(); throw e; });
 };
 /* ---------- tab 懒渲染：默认激活的 tab 首屏渲染，其余点击时才渲染（含数据依赖） ---------- */
 window.__tabRenders=window.__tabRenders||{};
@@ -1724,9 +1770,30 @@ function baseOpts(extra){
   function setStatus(t){statusEl.innerHTML=t;}
   async function ensureSQL(){
     if(SQL)return SQL;
-    if(typeof initSqlJs==='undefined'){setStatus('⚠ 未能加载 SQLite 引擎（sql.js），请检查网络后刷新。');throw new Error('no sql.js');}
     setStatus('加载 SQLite 引擎（首次需联网，之后浏览器缓存）…');
-    SQL=await initSqlJs({locateFile:f=>'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/'+f});
+    /* 2026-11-18：sql.js 不再在 <head> 同步加载（cdnjs 国内不可达会白屏），
+       改为按需加载：jsDelivr 优先，cdnjs 兜底。 */
+    if(typeof initSqlJs==='undefined'){
+      const bases=[
+        'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/',
+        'https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/'
+      ];
+      let ok=false;
+      for(const b of bases){
+        try{
+          await new Promise((res,rej)=>{
+            const s=document.createElement('script');
+            s.src=b+'sql-wasm.js';
+            s.onload=res;
+            s.onerror=()=>rej(new Error('load fail'));
+            document.head.appendChild(s);
+          });
+          if(typeof initSqlJs!=='undefined'){ ok=true; window.__SQL_BASE=b; break; }
+        }catch(e){ /* 试下一个源 */ }
+      }
+      if(!ok){ setStatus('⚠ 未能加载 SQLite 引擎（sql.js），请检查网络后刷新。'); throw new Error('no sql.js'); }
+    }
+    SQL=await initSqlJs({locateFile:f=>(window.__SQL_BASE||'https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/')+f});
     return SQL;
   }
   function loadFromBytes(uint8, name){
