@@ -15,7 +15,7 @@
    选股K线），首屏却要全部下载并解析。改为：数据外置成 fup_data/X.js，切到对应 tab 才拉。
    必须定义在 const 之前 —— const X = window.__LD('X') 先拿到一个空对象常量，
    数据文件到位后 Object.assign 原地填充，所有持有该引用的代码立刻看到新数据。 */
-window.__DATA_BASE = 'https://cdn.jsdelivr.net/gh/Jerryyan0516/quant-fupan@latest/data/';
+window.__DATA_BASE = 'https://cdn.jsdelivr.net/gh/Jerryyan0516/quant-fupan@main/data/';
 window.__LD_STORE = window.__LD_STORE || {};
 window.__LD_LOADED = window.__LD_LOADED || {};
 window.__LD_PENDING = window.__LD_PENDING || {};
@@ -1113,7 +1113,7 @@ async function renderKline(code, mount) {
    （概念板块 C / 涨停池 ZT / 选股K线 RANK_KLINE），首屏却要全部解析一遍。
    改为：首屏只内联 W/P/BOARD/TEMP 等小数据，大数据块外置，按 tab 依赖拉取。
    兼容 file:// —— 用 <script src> 动态插入（不受 fetch/XHR 的 CORS 限制）。 */
-window.__DATA_BASE = 'https://cdn.jsdelivr.net/gh/Jerryyan0516/quant-fupan@latest/data/';
+window.__DATA_BASE = 'https://cdn.jsdelivr.net/gh/Jerryyan0516/quant-fupan@main/data/';
 window.__LD_STORE = window.__LD_STORE || {};
 window.__LD_LOADED = window.__LD_LOADED || {};
 window.__LD_PENDING = window.__LD_PENDING || {};
