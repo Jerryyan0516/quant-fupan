@@ -1783,8 +1783,15 @@ function baseOpts(extra){
       const broken=L.broken||0;
       const touched=L.touched==null?((L.success||0)+broken):L.touched;
       const notTouched=L.not_touched==null?(L.total-touched):L.not_touched;
-      h+=`<div class="lvl"><div class="hd"><span class="nm">${L.label}</span><span class="rt ${L.rate>=0.5?'red':'orange'}">${rate}</span><span class="tag touch" title="晋级成功 /（晋级成功+炸板）">真实 ${tr}</span><span class="meta">晋级 ${L.success} / 候选 ${L.total}（失败 ${L.fail}）｜ 触板 ${touched} = 晋级 ${L.success} + 炸板 ${broken} ｜ 未触板 ${notTouched}</span></div>`;
-      if(L.success_stocks.length)h+=`<div style="margin:6px 0"><b class="red">晋级成功（${L.success_stocks.length}）</b><table><tr><th>名称</th><th>代码</th><th>晋级</th></tr>${L.success_stocks.map(s=>`<tr><td>${esc(s.名称)}</td><td class="grey">${s.代码}</td><td><span class="tag ok">${lb(s.t_lianban)}→${lb(s.t1_lianban)}</span></td></tr>`).join('')}</table></div>`;
+      // 次日竞价（卖点信号）：全体 / 晋级成功 / 晋级失败 三组均值读数
+      const ao=L.avg_open_chg, as=L.avg_open_succ, af=L.avg_open_fail;
+      const openStat=(ao!=null||as!=null||af!=null)
+        ? `<span class="meta" style="margin-left:10px">次日竞价 全体 <b class="${ao>=0?'red':'green'}">${fmt(ao)}</b> · 晋级 <b class="${as>=0?'red':'green'}">${fmt(as)}</b> · 失败 <b class="${af>=0?'red':'green'}">${fmt(af)}</b></span>`
+        : '';
+      h+=`<div class="lvl"><div class="hd"><span class="nm">${L.label}</span><span class="rt ${L.rate>=0.5?'red':'orange'}">${rate}</span><span class="tag touch" title="晋级成功 /（晋级成功+炸板）">真实 ${tr}</span><span class="meta">晋级 ${L.success} / 候选 ${L.total}（失败 ${L.fail}）｜ 触板 ${touched} = 晋级 ${L.success} + 炸板 ${broken} ｜ 未触板 ${notTouched}</span>${openStat}</div>`;
+      // 竞价单元格：红涨绿跌（A股口径），高开低走一眼可见
+      const openCell=s=>`<td class="${s.next_open_chg!=null?(s.next_open_chg>=0?'red':'green'):''}">${fmt(s.next_open_chg)}</td>`;
+      if(L.success_stocks.length)h+=`<div style="margin:6px 0"><b class="red">晋级成功（${L.success_stocks.length}）</b><table><tr><th>名称</th><th>代码</th><th>晋级</th><th>次日竞价</th></tr>${L.success_stocks.map(s=>`<tr><td>${esc(s.名称)}</td><td class="grey">${s.代码}</td><td><span class="tag ok">${lb(s.t_lianban)}→${lb(s.t1_lianban)}</span></td>${openCell(s)}</tr>`).join('')}</table></div>`;
       // 炸板 / 未触板 分组：标题写清只数，表内再分别标注一次（每个层级、每个区间都写）
       const fs=(L.fail_stocks||[]).slice().sort((a,b)=>(b.is_broken?1:0)-(a.is_broken?1:0));
       const bs=fs.filter(s=>s.is_broken), ns=fs.filter(s=>!s.is_broken);
@@ -1793,7 +1800,7 @@ function baseOpts(extra){
           ? `<span class="tag zb" style="margin-left:8px">触板数据缺失</span>`
           : `<span class="tag zb" style="margin-left:8px">其中炸板 ${bs.length} 只</span>`;
         h+=`<div style="margin:6px 0"><b class="green">晋级失败（${fs.length}）</b>${zbTag}<span class="tag" style="margin-left:4px">未触板 ${ns.length} 只</span>`
-          +`<table><tr><th>名称</th><th>代码</th><th>原连板</th><th>次日涨幅</th><th>次日触板状态</th></tr>`;
+          +`<table><tr><th>名称</th><th>代码</th><th>原连板</th><th>次日竞价</th><th>次日涨幅</th><th>次日触板状态</th></tr>`;
         const rowHtml=s=>{
           let st=`<span class="grey">未触板</span>`;
           if(s.is_broken){
@@ -1802,9 +1809,9 @@ function baseOpts(extra){
             const bits=[seal?'首封 '+seal:'', s.zb_cnt!=null?'开板 '+Number(s.zb_cnt).toFixed(0)+' 次':''];
             st=`<span class="tag zb">炸板</span><span class="grey">${bits.filter(Boolean).join(' · ')}</span>`;
           }
-          return `<tr><td>${esc(s.名称)}</td><td class="grey">${s.代码}</td><td>${lb(s.t_lianban)}</td><td class="${s.next_chg!=null?(s.next_chg>=0?'red':'green'):''}">${fmt(s.next_chg)}</td><td>${st}</td></tr>`;
+          return `<tr><td>${esc(s.名称)}</td><td class="grey">${s.代码}</td><td>${lb(s.t_lianban)}</td>${openCell(s)}<td class="${s.next_chg!=null?(s.next_chg>=0?'red':'green'):''}">${fmt(s.next_chg)}</td><td>${st}</td></tr>`;
         };
-        const grp=t=>`<tr><td colspan="5" style="background:#f3f5f8;color:#5b6270;font-size:12px;font-weight:700;padding:5px 8px">${t}</td></tr>`;
+        const grp=t=>`<tr><td colspan="6" style="background:#f3f5f8;color:#5b6270;font-size:12px;font-weight:700;padding:5px 8px">${t}</td></tr>`;
         if(bs.length)h+=grp(`触板炸板（${bs.length}）`)+bs.map(rowHtml).join('');
         if(ns.length)h+=grp(`未触板（${ns.length}）`)+ns.map(rowHtml).join('');
         h+=`</table></div>`;
